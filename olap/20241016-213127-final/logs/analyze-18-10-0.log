@@ -1,0 +1,1642 @@
+query 1 run 1
+SET
+SET
+SET
+                                                                 QUERY PLAN                                                                  
+---------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3947256.10..3947256.11 rows=1 width=236) (actual time=61685.205..61685.207 rows=1 loops=1)
+   ->  Sort  (cost=3947256.10..3947256.12 rows=6 width=236) (actual time=61685.204..61685.205 rows=1 loops=1)
+         Sort Key: l_returnflag, l_linestatus
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=3947255.91..3947256.07 rows=6 width=236) (actual time=61685.156..61685.163 rows=4 loops=1)
+               Group Key: l_returnflag, l_linestatus
+               Batches: 1  Memory Usage: 24kB
+               ->  Seq Scan on lineitem  (cost=0.00..1875005.80 rows=59207146 width=25) (actual time=0.720..10752.962 rows=59284448 loops=1)
+                     Filter: (l_shipdate <= '1998-09-10 00:00:00'::timestamp without time zone)
+                     Rows Removed by Filter: 701604
+ Planning Time: 30.226 ms
+ Execution Time: 61685.872 ms
+(12 rows)
+
+SET
+SET
+SET
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3947256.10..3947256.11 rows=1 width=236) (actual time=59576.216..59576.217 rows=1 loops=1)
+   ->  Sort  (cost=3947256.10..3947256.12 rows=6 width=236) (actual time=59576.215..59576.215 rows=1 loops=1)
+         Sort Key: l_returnflag, l_linestatus
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=3947255.91..3947256.07 rows=6 width=236) (actual time=59576.185..59576.191 rows=4 loops=1)
+               Group Key: l_returnflag, l_linestatus
+               Batches: 1  Memory Usage: 24kB
+               ->  Seq Scan on lineitem  (cost=0.00..1875005.80 rows=59207146 width=25) (actual time=0.023..8990.737 rows=59284448 loops=1)
+                     Filter: (l_shipdate <= '1998-09-10 00:00:00'::timestamp without time zone)
+                     Rows Removed by Filter: 701604
+ Planning Time: 1.072 ms
+ Execution Time: 59576.269 ms
+(12 rows)
+
+query 2 run 1
+SET
+SET
+SET
+                                                                                                 QUERY PLAN                                                                                                 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=485080.27..485080.27 rows=1 width=192) (actual time=27345.607..27345.621 rows=100 loops=1)
+   ->  Sort  (cost=485080.27..485080.27 rows=1 width=192) (actual time=27345.606..27345.614 rows=100 loops=1)
+         Sort Key: supplier.s_acctbal DESC, nation.n_name, supplier.s_name, part.p_partkey
+         Sort Method: top-N heapsort  Memory: 67kB
+         ->  Nested Loop  (cost=47.90..485080.26 rows=1 width=192) (actual time=30.114..27342.615 rows=4737 loops=1)
+               Join Filter: (supplier.s_nationkey = nation.n_nationkey)
+               Rows Removed by Join Filter: 18948
+               ->  Nested Loop  (cost=0.00..2.62 rows=5 width=30) (actual time=0.617..0.624 rows=5 loops=1)
+                     Join Filter: (nation.n_regionkey = region.r_regionkey)
+                     Rows Removed by Join Filter: 20
+                     ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.330..0.331 rows=1 loops=1)
+                           Filter: (r_name = 'AMERICA'::bpchar)
+                           Rows Removed by Filter: 4
+                     ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34) (actual time=0.284..0.287 rows=25 loops=1)
+               ->  Materialize  (cost=47.90..485077.56 rows=1 width=170) (actual time=4.897..5467.518 rows=4737 loops=5)
+                     Storage: Memory  Maximum Storage: 987kB
+                     ->  Nested Loop  (cost=47.90..485077.56 rows=1 width=170) (actual time=24.477..27326.635 rows=4737 loops=1)
+                           Join Filter: (supplier.s_suppkey = partsupp.ps_suppkey)
+                           Rows Removed by Join Filter: 236714834
+                           ->  Nested Loop  (cost=47.90..480606.56 rows=1 width=34) (actual time=2.064..1254.392 rows=4737 loops=1)
+                                 ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..54340.62 rows=8604 width=30) (actual time=0.288..287.459 rows=8046 loops=1)
+                                       Index Cond: (p_size = 16)
+                                       Filter: ((p_type)::text ~~ '%NICKEL'::text)
+                                       Rows Removed by Filter: 32185
+                                       Heap Fetches: 0
+                                 ->  Index Only Scan using q2_idx_2 on partsupp  (cost=47.47..49.53 rows=1 width=14) (actual time=0.002..0.003 rows=1 loops=8046)
+                                       Index Cond: ((ps_partkey = part.p_partkey) AND (ps_supplycost = (SubPlan 1)))
+                                       Heap Fetches: 0
+                                       SubPlan 1
+                                         ->  Aggregate  (cost=47.03..47.04 rows=1 width=32) (actual time=0.114..0.114 rows=1 loops=8046)
+                                               ->  Nested Loop  (cost=2.41..47.02 rows=3 width=6) (actual time=0.101..0.110 rows=1 loops=8046)
+                                                     Join Filter: (nation_1.n_regionkey = region_1.r_regionkey)
+                                                     Rows Removed by Join Filter: 3
+                                                     ->  Seq Scan on region region_1  (cost=0.00..1.06 rows=1 width=4) (actual time=0.001..0.002 rows=1 loops=8046)
+                                                           Filter: (r_name = 'AMERICA'::bpchar)
+                                                           Rows Removed by Filter: 4
+                                                     ->  Hash Join  (cost=2.41..45.74 rows=17 width=10) (actual time=0.084..0.107 rows=4 loops=8046)
+                                                           Hash Cond: (supplier_1.s_nationkey = nation_1.n_nationkey)
+                                                           ->  Nested Loop  (cost=0.85..44.13 rows=17 width=10) (actual time=0.083..0.105 rows=4 loops=8046)
+                                                                 ->  Index Only Scan using q2_idx_2 on partsupp partsupp_1  (cost=0.43..2.73 rows=17 width=10) (actual time=0.075..0.076 rows=4 loops=8046)
+                                                                       Index Cond: (ps_partkey = part.p_partkey)
+                                                                       Heap Fetches: 0
+                                                                 ->  Index Only Scan using q2_idx_3 on supplier supplier_1  (cost=0.42..2.43 rows=1 width=8) (actual time=0.006..0.006 rows=1 loops=32184)
+                                                                       Index Cond: (s_suppkey = partsupp_1.ps_suppkey)
+                                                                       Heap Fetches: 0
+                                                           ->  Hash  (cost=1.25..1.25 rows=25 width=8) (actual time=0.010..0.011 rows=25 loops=1)
+                                                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                 ->  Seq Scan on nation nation_1  (cost=0.00..1.25 rows=25 width=8) (actual time=0.003..0.006 rows=25 loops=1)
+                           ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=144) (actual time=0.001..2.626 rows=49972 loops=4737)
+ Planning Time: 26.116 ms
+ Execution Time: 27346.385 ms
+(51 rows)
+
+SET
+SET
+SET
+                                                                                                 QUERY PLAN                                                                                                 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=485080.27..485080.27 rows=1 width=192) (actual time=26013.506..26013.520 rows=100 loops=1)
+   ->  Sort  (cost=485080.27..485080.27 rows=1 width=192) (actual time=26013.505..26013.513 rows=100 loops=1)
+         Sort Key: supplier.s_acctbal DESC, nation.n_name, supplier.s_name, part.p_partkey
+         Sort Method: top-N heapsort  Memory: 67kB
+         ->  Nested Loop  (cost=47.90..485080.26 rows=1 width=192) (actual time=13.277..26010.574 rows=4737 loops=1)
+               Join Filter: (supplier.s_nationkey = nation.n_nationkey)
+               Rows Removed by Join Filter: 18948
+               ->  Nested Loop  (cost=0.00..2.62 rows=5 width=30) (actual time=0.019..0.025 rows=5 loops=1)
+                     Join Filter: (nation.n_regionkey = region.r_regionkey)
+                     Rows Removed by Join Filter: 20
+                     ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.007..0.009 rows=1 loops=1)
+                           Filter: (r_name = 'AMERICA'::bpchar)
+                           Rows Removed by Filter: 4
+                     ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34) (actual time=0.009..0.011 rows=25 loops=1)
+               ->  Materialize  (cost=47.90..485077.56 rows=1 width=170) (actual time=2.082..5201.254 rows=4737 loops=5)
+                     Storage: Memory  Maximum Storage: 987kB
+                     ->  Nested Loop  (cost=47.90..485077.56 rows=1 width=170) (actual time=10.405..25995.760 rows=4737 loops=1)
+                           Join Filter: (supplier.s_suppkey = partsupp.ps_suppkey)
+                           Rows Removed by Join Filter: 236714834
+                           ->  Nested Loop  (cost=47.90..480606.56 rows=1 width=34) (actual time=0.063..348.843 rows=4737 loops=1)
+                                 ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..54340.62 rows=8604 width=30) (actual time=0.008..108.868 rows=8046 loops=1)
+                                       Index Cond: (p_size = 16)
+                                       Filter: ((p_type)::text ~~ '%NICKEL'::text)
+                                       Rows Removed by Filter: 32185
+                                       Heap Fetches: 0
+                                 ->  Index Only Scan using q2_idx_2 on partsupp  (cost=47.47..49.53 rows=1 width=14) (actual time=0.002..0.002 rows=1 loops=8046)
+                                       Index Cond: ((ps_partkey = part.p_partkey) AND (ps_supplycost = (SubPlan 1)))
+                                       Heap Fetches: 0
+                                       SubPlan 1
+                                         ->  Aggregate  (cost=47.03..47.04 rows=1 width=32) (actual time=0.025..0.025 rows=1 loops=8046)
+                                               ->  Nested Loop  (cost=2.41..47.02 rows=3 width=6) (actual time=0.017..0.021 rows=1 loops=8046)
+                                                     Join Filter: (nation_1.n_regionkey = region_1.r_regionkey)
+                                                     Rows Removed by Join Filter: 3
+                                                     ->  Seq Scan on region region_1  (cost=0.00..1.06 rows=1 width=4) (actual time=0.001..0.002 rows=1 loops=8046)
+                                                           Filter: (r_name = 'AMERICA'::bpchar)
+                                                           Rows Removed by Filter: 4
+                                                     ->  Hash Join  (cost=2.41..45.74 rows=17 width=10) (actual time=0.010..0.018 rows=4 loops=8046)
+                                                           Hash Cond: (supplier_1.s_nationkey = nation_1.n_nationkey)
+                                                           ->  Nested Loop  (cost=0.85..44.13 rows=17 width=10) (actual time=0.008..0.016 rows=4 loops=8046)
+                                                                 ->  Index Only Scan using q2_idx_2 on partsupp partsupp_1  (cost=0.43..2.73 rows=17 width=10) (actual time=0.005..0.005 rows=4 loops=8046)
+                                                                       Index Cond: (ps_partkey = part.p_partkey)
+                                                                       Heap Fetches: 0
+                                                                 ->  Index Only Scan using q2_idx_3 on supplier supplier_1  (cost=0.42..2.43 rows=1 width=8) (actual time=0.002..0.002 rows=1 loops=32184)
+                                                                       Index Cond: (s_suppkey = partsupp_1.ps_suppkey)
+                                                                       Heap Fetches: 0
+                                                           ->  Hash  (cost=1.25..1.25 rows=25 width=8) (actual time=0.010..0.010 rows=25 loops=1)
+                                                                 Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                 ->  Seq Scan on nation nation_1  (cost=0.00..1.25 rows=25 width=8) (actual time=0.003..0.005 rows=25 loops=1)
+                           ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=144) (actual time=0.001..2.564 rows=49972 loops=4737)
+ Planning Time: 2.257 ms
+ Execution Time: 26013.583 ms
+(51 rows)
+
+query 3 run 1
+SET
+SET
+SET
+                                                                                     QUERY PLAN                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3201288.76..3201288.79 rows=10 width=44) (actual time=25118.875..25118.880 rows=10 loops=1)
+   ->  Sort  (cost=3201288.76..3209120.33 rows=3132629 width=44) (actual time=25118.873..25118.877 rows=10 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC, orders.o_orderdate
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  HashAggregate  (cost=3057725.42..3133593.78 rows=3132629 width=44) (actual time=25054.312..25098.651 rows=113934 loops=1)
+               Group Key: lineitem.l_orderkey, orders.o_orderdate, orders.o_shippriority
+               Planned Partitions: 16  Batches: 1  Memory Usage: 49169kB
+               ->  Hash Join  (cost=522405.79..2874662.41 rows=3132629 width=24) (actual time=8301.080..24859.771 rows=301530 loops=1)
+                     Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                     ->  Seq Scan on lineitem  (cost=0.00..1875005.80 rows=32470275 width=16) (actual time=0.501..10441.997 rows=32534229 loops=1)
+                           Filter: (l_shipdate > '1995-03-07'::date)
+                           Rows Removed by Filter: 27451823
+                     ->  Hash  (cost=497247.43..497247.43 rows=1447309 width=12) (actual time=8297.211..8297.213 rows=1451805 loops=1)
+                           Buckets: 2097152  Batches: 2  Memory Usage: 47606kB
+                           ->  Hash Join  (cost=126763.33..497247.43 rows=1447309 width=12) (actual time=962.849..7912.922 rows=1451805 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Bitmap Heap Scan on orders  (cost=68308.37..419837.56 rows=7220895 width=16) (actual time=534.211..5537.896 rows=7239437 loops=1)
+                                       Recheck Cond: (o_orderdate < '1995-03-07'::date)
+                                       Heap Blocks: exact=261268
+                                       ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..66503.15 rows=7220895 width=0) (actual time=481.560..481.560 rows=7239437 loops=1)
+                                             Index Cond: (o_orderdate < '1995-03-07'::date)
+                                 ->  Hash  (cost=54696.86..54696.86 rows=300648 width=4) (actual time=427.834..427.835 rows=300276 loops=1)
+                                       Buckets: 524288  Batches: 1  Memory Usage: 14653kB
+                                       ->  Seq Scan on customer  (cost=0.00..54696.86 rows=300648 width=4) (actual time=0.806..382.397 rows=300276 loops=1)
+                                             Filter: (c_mktsegment = 'BUILDING'::bpchar)
+                                             Rows Removed by Filter: 1199724
+ Planning Time: 31.019 ms
+ Execution Time: 25120.501 ms
+(28 rows)
+
+SET
+SET
+SET
+                                                                                     QUERY PLAN                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3201288.76..3201288.79 rows=10 width=44) (actual time=19230.858..19230.864 rows=10 loops=1)
+   ->  Sort  (cost=3201288.76..3209120.33 rows=3132629 width=44) (actual time=19230.856..19230.861 rows=10 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC, orders.o_orderdate
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  HashAggregate  (cost=3057725.42..3133593.78 rows=3132629 width=44) (actual time=19166.580..19210.747 rows=113934 loops=1)
+               Group Key: lineitem.l_orderkey, orders.o_orderdate, orders.o_shippriority
+               Planned Partitions: 16  Batches: 1  Memory Usage: 49169kB
+               ->  Hash Join  (cost=522405.79..2874662.41 rows=3132629 width=24) (actual time=4480.213..18983.307 rows=301530 loops=1)
+                     Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                     ->  Seq Scan on lineitem  (cost=0.00..1875005.80 rows=32470275 width=16) (actual time=0.048..8524.127 rows=32534229 loops=1)
+                           Filter: (l_shipdate > '1995-03-07'::date)
+                           Rows Removed by Filter: 27451823
+                     ->  Hash  (cost=497247.43..497247.43 rows=1447309 width=12) (actual time=4477.243..4477.246 rows=1451805 loops=1)
+                           Buckets: 2097152  Batches: 2  Memory Usage: 47606kB
+                           ->  Hash Join  (cost=126763.33..497247.43 rows=1447309 width=12) (actual time=812.383..4207.627 rows=1451805 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Bitmap Heap Scan on orders  (cost=68308.37..419837.56 rows=7220895 width=16) (actual time=502.594..2392.756 rows=7239437 loops=1)
+                                       Recheck Cond: (o_orderdate < '1995-03-07'::date)
+                                       Heap Blocks: exact=261268
+                                       ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..66503.15 rows=7220895 width=0) (actual time=450.839..450.839 rows=7239437 loops=1)
+                                             Index Cond: (o_orderdate < '1995-03-07'::date)
+                                 ->  Hash  (cost=54696.86..54696.86 rows=300648 width=4) (actual time=309.040..309.041 rows=300276 loops=1)
+                                       Buckets: 524288  Batches: 1  Memory Usage: 14653kB
+                                       ->  Seq Scan on customer  (cost=0.00..54696.86 rows=300648 width=4) (actual time=0.035..265.802 rows=300276 loops=1)
+                                             Filter: (c_mktsegment = 'BUILDING'::bpchar)
+                                             Rows Removed by Filter: 1199724
+ Planning Time: 2.212 ms
+ Execution Time: 19232.244 ms
+(28 rows)
+
+query 4 run 1
+SET
+SET
+SET
+                                                                                QUERY PLAN                                                                                
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=767088.68..767088.68 rows=1 width=24) (actual time=10065.163..10065.165 rows=1 loops=1)
+   ->  Sort  (cost=767088.68..767088.69 rows=5 width=24) (actual time=10065.162..10065.163 rows=1 loops=1)
+         Sort Key: orders.o_orderpriority
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=767088.61..767088.66 rows=5 width=24) (actual time=10064.379..10064.380 rows=5 loops=1)
+               Group Key: orders.o_orderpriority
+               Batches: 1  Memory Usage: 24kB
+               ->  Merge Semi Join  (cost=329981.27..764283.72 rows=560978 width=16) (actual time=4798.783..9966.253 rows=513822 loops=1)
+                     Merge Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Sort  (cost=329980.61..331383.46 rows=561141 width=20) (actual time=4798.510..4862.074 rows=560424 loops=1)
+                           Sort Key: orders.o_orderkey
+                           Sort Method: external merge  Disk: 16456kB
+                           ->  Bitmap Heap Scan on orders  (cost=6712.13..276397.25 rows=561141 width=20) (actual time=110.755..4643.313 rows=560424 loops=1)
+                                 Recheck Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                                 Heap Blocks: exact=231887
+                                 ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..6571.85 rows=561141 width=0) (actual time=64.007..64.007 rows=560424 loops=1)
+                                       Index Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                     ->  Index Only Scan using q4_idx_1 on lineitem  (cost=0.44..374091.55 rows=19996341 width=4) (actual time=0.264..3133.168 rows=37929279 loops=1)
+                           Heap Fetches: 0
+ Planning Time: 27.492 ms
+ Execution Time: 10067.771 ms
+(21 rows)
+
+SET
+SET
+SET
+                                                                                QUERY PLAN                                                                                
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=767088.68..767088.68 rows=1 width=24) (actual time=6455.496..6455.498 rows=1 loops=1)
+   ->  Sort  (cost=767088.68..767088.69 rows=5 width=24) (actual time=6455.495..6455.496 rows=1 loops=1)
+         Sort Key: orders.o_orderpriority
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=767088.61..767088.66 rows=5 width=24) (actual time=6455.462..6455.464 rows=5 loops=1)
+               Group Key: orders.o_orderpriority
+               Batches: 1  Memory Usage: 24kB
+               ->  Merge Semi Join  (cost=329981.27..764283.72 rows=560978 width=16) (actual time=1532.466..6357.865 rows=513822 loops=1)
+                     Merge Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Sort  (cost=329980.61..331383.46 rows=561141 width=20) (actual time=1532.411..1594.734 rows=560424 loops=1)
+                           Sort Key: orders.o_orderkey
+                           Sort Method: external merge  Disk: 16456kB
+                           ->  Bitmap Heap Scan on orders  (cost=6712.13..276397.25 rows=561141 width=20) (actual time=109.654..1413.646 rows=560424 loops=1)
+                                 Recheck Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                                 Heap Blocks: exact=231887
+                                 ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..6571.85 rows=561141 width=0) (actual time=63.604..63.604 rows=560424 loops=1)
+                                       Index Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                     ->  Index Only Scan using q4_idx_1 on lineitem  (cost=0.44..374091.55 rows=19996341 width=4) (actual time=0.047..2948.473 rows=37929279 loops=1)
+                           Heap Fetches: 0
+ Planning Time: 1.988 ms
+ Execution Time: 6457.614 ms
+(21 rows)
+
+query 5 run 1
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                         
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1626902.02..1626902.02 rows=1 width=58) (actual time=9952.319..9952.326 rows=1 loops=1)
+   ->  Sort  (cost=1626902.02..1626902.08 rows=25 width=58) (actual time=9952.318..9952.324 rows=1 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  GroupAggregate  (cost=1625993.12..1626901.89 rows=25 width=58) (actual time=9930.968..9952.304 rows=5 loops=1)
+               Group Key: nation.n_name
+               ->  Sort  (cost=1625993.12..1626174.81 rows=72677 width=38) (actual time=9925.732..9928.586 rows=72033 loops=1)
+                     Sort Key: nation.n_name
+                     Sort Method: quicksort  Memory: 7012kB
+                     ->  Hash Join  (cost=95221.73..1620124.73 rows=72677 width=38) (actual time=779.474..9886.606 rows=72033 loops=1)
+                           Hash Cond: ((lineitem.l_suppkey = supplier.s_suppkey) AND (customer.c_nationkey = supplier.s_nationkey))
+                           ->  Nested Loop  (cost=90500.73..1605863.52 rows=1817181 width=50) (actual time=738.223..9472.251 rows=1815327 loops=1)
+                                 ->  Hash Join  (cost=90500.16..398915.03 rows=454428 width=38) (actual time=737.590..5997.760 rows=453399 loops=1)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Bitmap Heap Scan on orders  (cost=27175.85..322525.92 rows=2272138 width=8) (actual time=223.152..4856.391 rows=2276638 loops=1)
+                                             Recheck Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                             Heap Blocks: exact=261246
+                                             ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..26607.82 rows=2272138 width=0) (actual time=170.489..170.489 rows=2276638 loops=1)
+                                                   Index Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                       ->  Hash  (cost=59574.34..59574.34 rows=299998 width=38) (actual time=513.995..513.998 rows=299436 loops=1)
+                                             Buckets: 524288  Batches: 1  Memory Usage: 25151kB
+                                             ->  Hash Join  (cost=2.51..59574.34 rows=299998 width=38) (actual time=1.452..455.633 rows=299436 loops=1)
+                                                   Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                                                   ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.865..301.910 rows=1500000 loops=1)
+                                                   ->  Hash  (cost=2.45..2.45 rows=5 width=30) (actual time=0.581..0.582 rows=5 loops=1)
+                                                         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                         ->  Hash Join  (cost=1.07..2.45 rows=5 width=30) (actual time=0.575..0.581 rows=5 loops=1)
+                                                               Hash Cond: (nation.n_regionkey = region.r_regionkey)
+                                                               ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34) (actual time=0.237..0.239 rows=25 loops=1)
+                                                               ->  Hash  (cost=1.06..1.06 rows=1 width=4) (actual time=0.330..0.331 rows=1 loops=1)
+                                                                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                     ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.325..0.326 rows=1 loops=1)
+                                                                           Filter: (r_name = 'AMERICA'::bpchar)
+                                                                           Rows Removed by Filter: 4
+                                 ->  Index Only Scan using q5_idx_1 on lineitem  (cost=0.56..2.62 rows=4 width=20) (actual time=0.006..0.007 rows=4 loops=453399)
+                                       Index Cond: (l_orderkey = orders.o_orderkey)
+                                       Heap Fetches: 0
+                           ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=39.666..39.666 rows=100000 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                 ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.616..24.703 rows=100000 loops=1)
+ Planning Time: 39.690 ms
+ Execution Time: 9953.165 ms
+(42 rows)
+
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                         
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1626902.02..1626902.02 rows=1 width=58) (actual time=5135.623..5135.630 rows=1 loops=1)
+   ->  Sort  (cost=1626902.02..1626902.08 rows=25 width=58) (actual time=5135.622..5135.628 rows=1 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  GroupAggregate  (cost=1625993.12..1626901.89 rows=25 width=58) (actual time=5114.379..5135.608 rows=5 loops=1)
+               Group Key: nation.n_name
+               ->  Sort  (cost=1625993.12..1626174.81 rows=72677 width=38) (actual time=5109.025..5111.967 rows=72033 loops=1)
+                     Sort Key: nation.n_name
+                     Sort Method: quicksort  Memory: 7012kB
+                     ->  Hash Join  (cost=95221.73..1620124.73 rows=72677 width=38) (actual time=642.005..5078.370 rows=72033 loops=1)
+                           Hash Cond: ((lineitem.l_suppkey = supplier.s_suppkey) AND (customer.c_nationkey = supplier.s_nationkey))
+                           ->  Nested Loop  (cost=90500.73..1605863.52 rows=1817181 width=50) (actual time=608.524..4691.018 rows=1815327 loops=1)
+                                 ->  Hash Join  (cost=90500.16..398915.03 rows=454428 width=38) (actual time=608.491..2590.771 rows=453399 loops=1)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Bitmap Heap Scan on orders  (cost=27175.85..322525.92 rows=2272138 width=8) (actual time=212.379..1636.902 rows=2276638 loops=1)
+                                             Recheck Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                             Heap Blocks: exact=261246
+                                             ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..26607.82 rows=2272138 width=0) (actual time=160.691..160.692 rows=2276638 loops=1)
+                                                   Index Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                       ->  Hash  (cost=59574.34..59574.34 rows=299998 width=38) (actual time=395.736..395.739 rows=299436 loops=1)
+                                             Buckets: 524288  Batches: 1  Memory Usage: 25151kB
+                                             ->  Hash Join  (cost=2.51..59574.34 rows=299998 width=38) (actual time=0.069..339.548 rows=299436 loops=1)
+                                                   Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                                                   ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.030..191.271 rows=1500000 loops=1)
+                                                   ->  Hash  (cost=2.45..2.45 rows=5 width=30) (actual time=0.034..0.035 rows=5 loops=1)
+                                                         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                         ->  Hash Join  (cost=1.07..2.45 rows=5 width=30) (actual time=0.028..0.033 rows=5 loops=1)
+                                                               Hash Cond: (nation.n_regionkey = region.r_regionkey)
+                                                               ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34) (actual time=0.008..0.009 rows=25 loops=1)
+                                                               ->  Hash  (cost=1.06..1.06 rows=1 width=4) (actual time=0.015..0.016 rows=1 loops=1)
+                                                                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                                     ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                                                           Filter: (r_name = 'AMERICA'::bpchar)
+                                                                           Rows Removed by Filter: 4
+                                 ->  Index Only Scan using q5_idx_1 on lineitem  (cost=0.56..2.62 rows=4 width=20) (actual time=0.004..0.004 rows=4 loops=453399)
+                                       Index Cond: (l_orderkey = orders.o_orderkey)
+                                       Heap Fetches: 0
+                           ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=33.234..33.234 rows=100000 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                 ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.021..17.369 rows=100000 loops=1)
+ Planning Time: 4.817 ms
+ Execution Time: 5136.089 ms
+(42 rows)
+
+query 6 run 1
+SET
+SET
+SET
+                                                                                                          QUERY PLAN                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2043365.80..2043365.81 rows=1 width=32) (actual time=12833.000..12833.001 rows=1 loops=1)
+   ->  Aggregate  (cost=2043365.80..2043365.81 rows=1 width=32) (actual time=12832.998..12832.999 rows=1 loops=1)
+         ->  Bitmap Heap Scan on lineitem  (cost=227081.71..2037443.36 rows=1184488 width=12) (actual time=1317.207..12355.029 rows=1194558 loops=1)
+               Recheck Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < '25'::numeric))
+               Rows Removed by Index Recheck: 13724091
+               Heap Blocks: exact=395900 lossy=267068
+               ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..226785.59 rows=1184488 width=0) (actual time=1231.918..1231.919 rows=1194558 loops=1)
+                     Index Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < '25'::numeric))
+ Planning Time: 22.026 ms
+ Execution Time: 12834.448 ms
+(10 rows)
+
+SET
+SET
+SET
+                                                                                                          QUERY PLAN                                                                                                           
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2043365.80..2043365.81 rows=1 width=32) (actual time=6577.603..6577.604 rows=1 loops=1)
+   ->  Aggregate  (cost=2043365.80..2043365.81 rows=1 width=32) (actual time=6577.601..6577.602 rows=1 loops=1)
+         ->  Bitmap Heap Scan on lineitem  (cost=227081.71..2037443.36 rows=1184488 width=12) (actual time=1183.735..6251.259 rows=1194558 loops=1)
+               Recheck Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < '25'::numeric))
+               Rows Removed by Index Recheck: 13724091
+               Heap Blocks: exact=395900 lossy=267068
+               ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..226785.59 rows=1184488 width=0) (actual time=1099.514..1099.514 rows=1194558 loops=1)
+                     Index Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < '25'::numeric))
+ Planning Time: 1.595 ms
+ Execution Time: 6577.855 ms
+(10 rows)
+
+query 7 run 1
+SET
+SET
+SET
+                                                                                 QUERY PLAN                                                                                  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2716091.50..2716091.62 rows=1 width=116) (actual time=17871.488..17871.495 rows=1 loops=1)
+   ->  GroupAggregate  (cost=2716091.50..2717287.88 rows=10044 width=116) (actual time=17871.487..17871.493 rows=1 loops=1)
+         Group Key: n1.n_name, n2.n_name, (EXTRACT(year FROM lineitem.l_shipdate))
+         ->  Sort  (cost=2716091.50..2716240.89 rows=59755 width=96) (actual time=17864.413..17865.000 rows=14421 loops=1)
+               Sort Key: n1.n_name, n2.n_name, (EXTRACT(year FROM lineitem.l_shipdate))
+               Sort Method: quicksort  Memory: 6503kB
+               ->  Hash Join  (cost=563430.91..2711350.91 rows=59755 width=96) (actual time=4761.974..17830.560 rows=57794 loops=1)
+                     Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                     Join Filter: (((n1.n_name = 'PERU'::bpchar) AND (n2.n_name = 'MOROCCO'::bpchar)) OR ((n1.n_name = 'MOROCCO'::bpchar) AND (n2.n_name = 'PERU'::bpchar)))
+                     Rows Removed by Join Filter: 58158
+                     ->  Hash Join  (cost=3629.40..2110273.09 rows=1435874 width=46) (actual time=31.949..12470.134 rows=1455694 loops=1)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..2024978.36 rows=17948423 width=24) (actual time=0.544..10304.595 rows=18230325 loops=1)
+                                 Filter: ((l_shipdate >= '1995-01-01'::date) AND (l_shipdate <= '1996-12-31'::date))
+                                 Rows Removed by Filter: 41755727
+                           ->  Hash  (cost=3529.40..3529.40 rows=8000 width=30) (actual time=31.391..31.392 rows=7981 loops=1)
+                                 Buckets: 8192  Batches: 1  Memory Usage: 548kB
+                                 ->  Hash Join  (cost=1.40..3529.40 rows=8000 width=30) (actual time=0.687..30.304 rows=7981 loops=1)
+                                       Hash Cond: (supplier.s_nationkey = n1.n_nationkey)
+                                       ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.465..21.252 rows=100000 loops=1)
+                                       ->  Hash  (cost=1.38..1.38 rows=2 width=30) (actual time=0.214..0.215 rows=2 loops=1)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                             ->  Seq Scan on nation n1  (cost=0.00..1.38 rows=2 width=30) (actual time=0.206..0.210 rows=2 loops=1)
+                                                   Filter: ((n_name = 'PERU'::bpchar) OR (n_name = 'MOROCCO'::bpchar))
+                                                   Rows Removed by Filter: 23
+                     ->  Hash  (cost=536594.88..536594.88 rows=1200130 width=30) (actual time=4725.115..4725.118 rows=1191175 loops=1)
+                           Buckets: 1048576  Batches: 2  Memory Usage: 44259kB
+                           ->  Hash Join  (cost=57053.25..536594.88 rows=1200130 width=30) (actual time=456.512..4484.814 rows=1191175 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=8) (actual time=0.805..1513.768 rows=15000000 loops=1)
+                                 ->  Hash  (cost=55553.26..55553.26 rows=119999 width=30) (actual time=455.413..455.415 rows=119622 loops=1)
+                                       Buckets: 131072  Batches: 1  Memory Usage: 8267kB
+                                       ->  Hash Join  (cost=1.40..55553.26 rows=119999 width=30) (actual time=0.644..434.216 rows=119622 loops=1)
+                                             Hash Cond: (customer.c_nationkey = n2.n_nationkey)
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.608..302.943 rows=1500000 loops=1)
+                                             ->  Hash  (cost=1.38..1.38 rows=2 width=30) (actual time=0.027..0.028 rows=2 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                   ->  Seq Scan on nation n2  (cost=0.00..1.38 rows=2 width=30) (actual time=0.019..0.022 rows=2 loops=1)
+                                                         Filter: ((n_name = 'MOROCCO'::bpchar) OR (n_name = 'PERU'::bpchar))
+                                                         Rows Removed by Filter: 23
+ Planning Time: 39.965 ms
+ Execution Time: 17872.144 ms
+(42 rows)
+
+SET
+SET
+SET
+                                                                                 QUERY PLAN                                                                                  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2716091.50..2716091.62 rows=1 width=116) (actual time=14524.281..14524.288 rows=1 loops=1)
+   ->  GroupAggregate  (cost=2716091.50..2717287.88 rows=10044 width=116) (actual time=14524.280..14524.286 rows=1 loops=1)
+         Group Key: n1.n_name, n2.n_name, (EXTRACT(year FROM lineitem.l_shipdate))
+         ->  Sort  (cost=2716091.50..2716240.89 rows=59755 width=96) (actual time=14517.202..14517.796 rows=14421 loops=1)
+               Sort Key: n1.n_name, n2.n_name, (EXTRACT(year FROM lineitem.l_shipdate))
+               Sort Method: quicksort  Memory: 6503kB
+               ->  Hash Join  (cost=563430.91..2711350.91 rows=59755 width=96) (actual time=3878.592..14485.130 rows=57794 loops=1)
+                     Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                     Join Filter: (((n1.n_name = 'PERU'::bpchar) AND (n2.n_name = 'MOROCCO'::bpchar)) OR ((n1.n_name = 'MOROCCO'::bpchar) AND (n2.n_name = 'PERU'::bpchar)))
+                     Rows Removed by Join Filter: 58158
+                     ->  Hash Join  (cost=3629.40..2110273.09 rows=1435874 width=46) (actual time=18.525..10040.685 rows=1455694 loops=1)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..2024978.36 rows=17948423 width=24) (actual time=0.042..8259.897 rows=18230325 loops=1)
+                                 Filter: ((l_shipdate >= '1995-01-01'::date) AND (l_shipdate <= '1996-12-31'::date))
+                                 Rows Removed by Filter: 41755727
+                           ->  Hash  (cost=3529.40..3529.40 rows=8000 width=30) (actual time=18.474..18.476 rows=7981 loops=1)
+                                 Buckets: 8192  Batches: 1  Memory Usage: 548kB
+                                 ->  Hash Join  (cost=1.40..3529.40 rows=8000 width=30) (actual time=0.020..17.520 rows=7981 loops=1)
+                                       Hash Cond: (supplier.s_nationkey = n1.n_nationkey)
+                                       ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.007..6.291 rows=100000 loops=1)
+                                       ->  Hash  (cost=1.38..1.38 rows=2 width=30) (actual time=0.009..0.010 rows=2 loops=1)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                             ->  Seq Scan on nation n1  (cost=0.00..1.38 rows=2 width=30) (actual time=0.005..0.007 rows=2 loops=1)
+                                                   Filter: ((n_name = 'PERU'::bpchar) OR (n_name = 'MOROCCO'::bpchar))
+                                                   Rows Removed by Filter: 23
+                     ->  Hash  (cost=536594.88..536594.88 rows=1200130 width=30) (actual time=3857.749..3857.752 rows=1191175 loops=1)
+                           Buckets: 1048576  Batches: 2  Memory Usage: 44259kB
+                           ->  Hash Join  (cost=57053.25..536594.88 rows=1200130 width=30) (actual time=282.470..3631.968 rows=1191175 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=8) (actual time=0.048..1062.092 rows=15000000 loops=1)
+                                 ->  Hash  (cost=55553.26..55553.26 rows=119999 width=30) (actual time=282.160..282.161 rows=119622 loops=1)
+                                       Buckets: 131072  Batches: 1  Memory Usage: 8267kB
+                                       ->  Hash Join  (cost=1.40..55553.26 rows=119999 width=30) (actual time=0.028..262.464 rows=119622 loops=1)
+                                             Hash Cond: (customer.c_nationkey = n2.n_nationkey)
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.008..94.857 rows=1500000 loops=1)
+                                             ->  Hash  (cost=1.38..1.38 rows=2 width=30) (actual time=0.015..0.016 rows=2 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                   ->  Seq Scan on nation n2  (cost=0.00..1.38 rows=2 width=30) (actual time=0.010..0.012 rows=2 loops=1)
+                                                         Filter: ((n_name = 'MOROCCO'::bpchar) OR (n_name = 'PERU'::bpchar))
+                                                         Rows Removed by Filter: 23
+ Planning Time: 3.491 ms
+ Execution Time: 14524.566 ms
+(42 rows)
+
+query 8 run 1
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                         
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=578553.68..578553.92 rows=1 width=64) (actual time=11402.327..11402.333 rows=1 loops=1)
+   ->  GroupAggregate  (cost=578553.68..579149.40 rows=2406 width=64) (actual time=11402.326..11402.332 rows=1 loops=1)
+         Group Key: (EXTRACT(year FROM orders.o_orderdate))
+         ->  Sort  (cost=578553.68..578614.52 rows=24338 width=70) (actual time=11396.952..11397.424 rows=11818 loops=1)
+               Sort Key: (EXTRACT(year FROM orders.o_orderdate))
+               Sort Method: quicksort  Memory: 2259kB
+               ->  Nested Loop  (cost=226734.86..576780.54 rows=24338 width=70) (actual time=5153.835..11377.937 rows=23842 loops=1)
+                     ->  Hash Join  (cost=226734.71..576095.65 rows=24338 width=20) (actual time=5153.809..11335.927 rows=23842 loops=1)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Hash Join  (cost=222263.71..571560.76 rows=24338 width=20) (actual time=5112.158..11281.320 rows=23842 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Hash Join  (cost=158939.40..507536.73 rows=121690 width=24) (actual time=4609.138..10742.724 rows=118593 loops=1)
+                                       Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                                       ->  Bitmap Heap Scan on orders  (cost=54927.23..385085.18 rows=4592663 width=12) (actual time=366.677..5386.525 rows=4557513 loops=1)
+                                             Recheck Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                             Heap Blocks: exact=261268
+                                             ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..53779.06 rows=4592663 width=0) (actual time=314.077..314.078 rows=4557513 loops=1)
+                                                   Index Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                       ->  Hash  (cost=99043.53..99043.53 rows=397491 width=20) (actual time=4242.114..4242.115 rows=389521 loops=1)
+                                             Buckets: 524288  Batches: 1  Memory Usage: 25019kB
+                                             ->  Nested Loop  (cost=0.99..99043.53 rows=397491 width=20) (actual time=2.217..4101.535 rows=389521 loops=1)
+                                                   ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..53964.82 rows=13252 width=4) (actual time=0.949..350.571 rows=13011 loops=1)
+                                                         Index Cond: (p_type = 'LARGE POLISHED BRASS'::text)
+                                                         Heap Fetches: 0
+                                                   ->  Index Only Scan using q8_idx_1 on lineitem  (cost=0.56..3.09 rows=31 width=24) (actual time=0.222..0.282 rows=30 loops=13011)
+                                                         Index Cond: (l_partkey = part.p_partkey)
+                                                         Heap Fetches: 0
+                                 ->  Hash  (cost=59574.34..59574.34 rows=299998 width=4) (actual time=502.359..502.361 rows=299436 loops=1)
+                                       Buckets: 524288  Batches: 1  Memory Usage: 14624kB
+                                       ->  Hash Join  (cost=2.51..59574.34 rows=299998 width=4) (actual time=1.582..455.043 rows=299436 loops=1)
+                                             Hash Cond: (customer.c_nationkey = n1.n_nationkey)
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.905..304.070 rows=1500000 loops=1)
+                                             ->  Hash  (cost=2.45..2.45 rows=5 width=4) (actual time=0.671..0.672 rows=5 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                   ->  Hash Join  (cost=1.07..2.45 rows=5 width=4) (actual time=0.666..0.670 rows=5 loops=1)
+                                                         Hash Cond: (n1.n_regionkey = region.r_regionkey)
+                                                         ->  Seq Scan on nation n1  (cost=0.00..1.25 rows=25 width=8) (actual time=0.331..0.332 rows=25 loops=1)
+                                                         ->  Hash  (cost=1.06..1.06 rows=1 width=4) (actual time=0.329..0.329 rows=1 loops=1)
+                                                               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                               ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.325..0.326 rows=1 loops=1)
+                                                                     Filter: (r_name = 'AMERICA'::bpchar)
+                                                                     Rows Removed by Filter: 4
+                           ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=41.390..41.391 rows=100000 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                 ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.463..25.394 rows=100000 loops=1)
+                     ->  Memoize  (cost=0.15..1.17 rows=1 width=30) (actual time=0.000..0.000 rows=1 loops=23842)
+                           Cache Key: supplier.s_nationkey
+                           Cache Mode: logical
+                           Hits: 23817  Misses: 25  Evictions: 0  Overflows: 0  Memory Usage: 4kB
+                           ->  Index Scan using nation_pkey on nation n2  (cost=0.14..1.16 rows=1 width=30) (actual time=0.005..0.005 rows=1 loops=25)
+                                 Index Cond: (n_nationkey = supplier.s_nationkey)
+ Planning Time: 42.779 ms
+ Execution Time: 11402.914 ms
+(53 rows)
+
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                         
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=578553.68..578553.92 rows=1 width=64) (actual time=3773.010..3773.016 rows=1 loops=1)
+   ->  GroupAggregate  (cost=578553.68..579149.40 rows=2406 width=64) (actual time=3773.009..3773.014 rows=1 loops=1)
+         Group Key: (EXTRACT(year FROM orders.o_orderdate))
+         ->  Sort  (cost=578553.68..578614.52 rows=24338 width=70) (actual time=3767.790..3768.241 rows=11818 loops=1)
+               Sort Key: (EXTRACT(year FROM orders.o_orderdate))
+               Sort Method: quicksort  Memory: 2259kB
+               ->  Nested Loop  (cost=226734.86..576780.54 rows=24338 width=70) (actual time=1202.039..3755.108 rows=23842 loops=1)
+                     ->  Hash Join  (cost=226734.71..576095.65 rows=24338 width=20) (actual time=1202.024..3730.770 rows=23842 loops=1)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Hash Join  (cost=222263.71..571560.76 rows=24338 width=20) (actual time=1169.638..3688.351 rows=23842 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Hash Join  (cost=158939.40..507536.73 rows=121690 width=24) (actual time=786.832..3277.704 rows=118593 loops=1)
+                                       Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                                       ->  Bitmap Heap Scan on orders  (cost=54927.23..385085.18 rows=4592663 width=12) (actual time=344.824..1977.039 rows=4557513 loops=1)
+                                             Recheck Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                             Heap Blocks: exact=261268
+                                             ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..53779.06 rows=4592663 width=0) (actual time=292.594..292.595 rows=4557513 loops=1)
+                                                   Index Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                       ->  Hash  (cost=99043.53..99043.53 rows=397491 width=20) (actual time=441.693..441.694 rows=389521 loops=1)
+                                             Buckets: 524288  Batches: 1  Memory Usage: 25019kB
+                                             ->  Nested Loop  (cost=0.99..99043.53 rows=397491 width=20) (actual time=0.087..365.401 rows=389521 loops=1)
+                                                   ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..53964.82 rows=13252 width=4) (actual time=0.055..141.247 rows=13011 loops=1)
+                                                         Index Cond: (p_type = 'LARGE POLISHED BRASS'::text)
+                                                         Heap Fetches: 0
+                                                   ->  Index Only Scan using q8_idx_1 on lineitem  (cost=0.56..3.09 rows=31 width=24) (actual time=0.008..0.014 rows=30 loops=13011)
+                                                         Index Cond: (l_partkey = part.p_partkey)
+                                                         Heap Fetches: 0
+                                 ->  Hash  (cost=59574.34..59574.34 rows=299998 width=4) (actual time=382.101..382.103 rows=299436 loops=1)
+                                       Buckets: 524288  Batches: 1  Memory Usage: 14624kB
+                                       ->  Hash Join  (cost=2.51..59574.34 rows=299998 width=4) (actual time=0.071..336.835 rows=299436 loops=1)
+                                             Hash Cond: (customer.c_nationkey = n1.n_nationkey)
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=8) (actual time=0.028..189.671 rows=1500000 loops=1)
+                                             ->  Hash  (cost=2.45..2.45 rows=5 width=4) (actual time=0.038..0.040 rows=5 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                   ->  Hash Join  (cost=1.07..2.45 rows=5 width=4) (actual time=0.033..0.038 rows=5 loops=1)
+                                                         Hash Cond: (n1.n_regionkey = region.r_regionkey)
+                                                         ->  Seq Scan on nation n1  (cost=0.00..1.25 rows=25 width=8) (actual time=0.013..0.014 rows=25 loops=1)
+                                                         ->  Hash  (cost=1.06..1.06 rows=1 width=4) (actual time=0.016..0.016 rows=1 loops=1)
+                                                               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                                                               ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4) (actual time=0.012..0.013 rows=1 loops=1)
+                                                                     Filter: (r_name = 'AMERICA'::bpchar)
+                                                                     Rows Removed by Filter: 4
+                           ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=32.111..32.111 rows=100000 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                 ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.029..17.309 rows=100000 loops=1)
+                     ->  Memoize  (cost=0.15..1.17 rows=1 width=30) (actual time=0.000..0.000 rows=1 loops=23842)
+                           Cache Key: supplier.s_nationkey
+                           Cache Mode: logical
+                           Hits: 23817  Misses: 25  Evictions: 0  Overflows: 0  Memory Usage: 4kB
+                           ->  Index Scan using nation_pkey on nation n2  (cost=0.14..1.16 rows=1 width=30) (actual time=0.002..0.002 rows=1 loops=25)
+                                 Index Cond: (n_nationkey = supplier.s_nationkey)
+ Planning Time: 5.689 ms
+ Execution Time: 3773.293 ms
+(53 rows)
+
+query 9 run 1
+SET
+SET
+SET
+                                                                                            QUERY PLAN                                                                                             
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1631156.16..1631156.17 rows=1 width=90) (actual time=23806.910..23806.916 rows=1 loops=1)
+   ->  Sort  (cost=1631156.16..1631306.54 rows=60150 width=90) (actual time=23806.909..23806.914 rows=1 loops=1)
+         Sort Key: nation.n_name, (EXTRACT(year FROM orders.o_orderdate)) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=1629953.16..1630855.41 rows=60150 width=90) (actual time=23805.607..23806.053 rows=175 loops=1)
+               Group Key: nation.n_name, EXTRACT(year FROM orders.o_orderdate)
+               Batches: 1  Memory Usage: 3217kB
+               ->  Hash Join  (cost=886801.22..1576932.70 rows=3029741 width=81) (actual time=13081.224..21350.344 rows=3248192 loops=1)
+                     Hash Cond: (supplier.s_nationkey = nation.n_nationkey)
+                     ->  Hash Join  (cost=886799.66..1560055.47 rows=3029741 width=31) (actual time=13080.955..20449.792 rows=3248192 loops=1)
+                           Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                           ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=8) (actual time=0.568..2142.548 rows=15000000 loops=1)
+                           ->  Hash  (cost=828215.89..828215.89 rows=3029741 width=31) (actual time=13078.914..13078.917 rows=3248192 loops=1)
+                                 Buckets: 1048576  Batches: 4  Memory Usage: 61114kB
+                                 ->  Hash Join  (cost=4491.31..828215.89 rows=3029741 width=31) (actual time=41.875..12322.983 rows=3248192 loops=1)
+                                       Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                                       ->  Merge Join  (cost=20.31..815791.49 rows=3029741 width=35) (actual time=2.471..11621.268 rows=3248192 loops=1)
+                                             Merge Cond: (lineitem.l_partkey = partsupp.ps_partkey)
+                                             Join Filter: (lineitem.l_suppkey = partsupp.ps_suppkey)
+                                             Rows Removed by Join Filter: 4873781
+                                             ->  Nested Loop  (cost=0.99..407848.39 rows=3029741 width=33) (actual time=2.170..6893.947 rows=3248192 loops=1)
+                                                   ->  Index Only Scan using q20_idx_2 on part  (cost=0.43..64306.13 rows=101009 width=4) (actual time=0.025..519.955 rows=108312 loops=1)
+                                                         Filter: ((p_name)::text ~~ '%navy%'::text)
+                                                         Rows Removed by Filter: 1891688
+                                                         Heap Fetches: 0
+                                                   ->  Index Only Scan using q9_idx_1 on lineitem  (cost=0.56..3.09 rows=31 width=29) (actual time=0.040..0.056 rows=30 loops=108312)
+                                                         Index Cond: (l_partkey = part.p_partkey)
+                                                         Heap Fetches: 0
+                                             ->  Materialize  (cost=0.43..201554.99 rows=8001746 width=14) (actual time=0.272..2949.102 rows=12548878 loops=1)
+                                                   Storage: Memory  Maximum Storage: 17kB
+                                                   ->  Index Only Scan using q2_idx_2 on partsupp  (cost=0.43..181550.62 rows=8001746 width=14) (actual time=0.266..1119.010 rows=7999980 loops=1)
+                                                         Heap Fetches: 0
+                                       ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=39.301..39.302 rows=100000 loops=1)
+                                             Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                             ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.441..25.219 rows=100000 loops=1)
+                     ->  Hash  (cost=1.25..1.25 rows=25 width=30) (actual time=0.260..0.260 rows=25 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                           ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=30) (actual time=0.242..0.247 rows=25 loops=1)
+ Planning Time: 49.021 ms
+ Execution Time: 23808.016 ms
+(40 rows)
+
+SET
+SET
+SET
+                                                                                            QUERY PLAN                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1631156.16..1631156.17 rows=1 width=90) (actual time=17822.891..17822.897 rows=1 loops=1)
+   ->  Sort  (cost=1631156.16..1631306.54 rows=60150 width=90) (actual time=17822.890..17822.895 rows=1 loops=1)
+         Sort Key: nation.n_name, (EXTRACT(year FROM orders.o_orderdate)) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=1629953.16..1630855.41 rows=60150 width=90) (actual time=17822.360..17822.794 rows=175 loops=1)
+               Group Key: nation.n_name, EXTRACT(year FROM orders.o_orderdate)
+               Batches: 1  Memory Usage: 3217kB
+               ->  Hash Join  (cost=886801.22..1576932.70 rows=3029741 width=81) (actual time=7571.288..15388.134 rows=3248192 loops=1)
+                     Hash Cond: (supplier.s_nationkey = nation.n_nationkey)
+                     ->  Hash Join  (cost=886799.66..1560055.47 rows=3029741 width=31) (actual time=7571.260..14503.275 rows=3248192 loops=1)
+                           Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                           ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=8) (actual time=0.050..1764.629 rows=15000000 loops=1)
+                           ->  Hash  (cost=828215.89..828215.89 rows=3029741 width=31) (actual time=7569.676..7569.679 rows=3248192 loops=1)
+                                 Buckets: 1048576  Batches: 4  Memory Usage: 61114kB
+                                 ->  Hash Join  (cost=4491.31..828215.89 rows=3029741 width=31) (actual time=27.800..6874.378 rows=3248192 loops=1)
+                                       Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                                       ->  Merge Join  (cost=20.31..815791.49 rows=3029741 width=35) (actual time=0.100..6226.656 rows=3248192 loops=1)
+                                             Merge Cond: (lineitem.l_partkey = partsupp.ps_partkey)
+                                             Join Filter: (lineitem.l_suppkey = partsupp.ps_suppkey)
+                                             Rows Removed by Join Filter: 4873781
+                                             ->  Nested Loop  (cost=0.99..407848.39 rows=3029741 width=33) (actual time=0.050..1956.115 rows=3248192 loops=1)
+                                                   ->  Index Only Scan using q20_idx_2 on part  (cost=0.43..64306.13 rows=101009 width=4) (actual time=0.026..393.807 rows=108312 loops=1)
+                                                         Filter: ((p_name)::text ~~ '%navy%'::text)
+                                                         Rows Removed by Filter: 1891688
+                                                         Heap Fetches: 0
+                                                   ->  Index Only Scan using q9_idx_1 on lineitem  (cost=0.56..3.09 rows=31 width=29) (actual time=0.004..0.012 rows=30 loops=108312)
+                                                         Index Cond: (l_partkey = part.p_partkey)
+                                                         Heap Fetches: 0
+                                             ->  Materialize  (cost=0.43..201554.99 rows=8001746 width=14) (actual time=0.020..2619.021 rows=12548878 loops=1)
+                                                   Storage: Memory  Maximum Storage: 17kB
+                                                   ->  Index Only Scan using q2_idx_2 on partsupp  (cost=0.43..181550.62 rows=8001746 width=14) (actual time=0.016..859.107 rows=7999980 loops=1)
+                                                         Heap Fetches: 0
+                                       ->  Hash  (cost=3221.00..3221.00 rows=100000 width=8) (actual time=27.576..27.577 rows=100000 loops=1)
+                                             Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                             ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=8) (actual time=0.012..13.673 rows=100000 loops=1)
+                     ->  Hash  (cost=1.25..1.25 rows=25 width=30) (actual time=0.020..0.020 rows=25 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 10kB
+                           ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=30) (actual time=0.011..0.014 rows=25 loops=1)
+ Planning Time: 6.519 ms
+ Execution Time: 17823.767 ms
+(40 rows)
+
+query 10 run 1
+SET
+SET
+SET
+                                                                                            QUERY PLAN                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1721644.49..1721644.54 rows=20 width=202) (actual time=14063.335..14063.340 rows=20 loops=1)
+   ->  Sort  (cost=1721644.49..1723113.03 rows=587418 width=202) (actual time=14063.334..14063.337 rows=20 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC
+         Sort Method: top-N heapsort  Memory: 33kB
+         ->  GroupAggregate  (cost=1571268.10..1706013.51 rows=587418 width=202) (actual time=11716.220..13947.332 rows=381205 loops=1)
+               Group Key: customer.c_custkey, nation.n_name
+               ->  Incremental Sort  (cost=1571268.10..1691328.06 rows=587418 width=182) (actual time=11716.208..13276.432 rows=1145402 loops=1)
+                     Sort Key: customer.c_custkey, nation.n_name
+                     Presorted Key: customer.c_custkey
+                     Full-sort Groups: 34068  Sort Method: quicksort  Average Memory: 31kB  Peak Memory: 31kB
+                     ->  Nested Loop  (cost=1571267.93..1664894.25 rows=587418 width=182) (actual time=11716.088..12920.991 rows=1145402 loops=1)
+                           ->  Merge Join  (cost=1571267.78..1650505.05 rows=587418 width=160) (actual time=11715.811..12532.745 rows=1145402 loops=1)
+                                 Merge Cond: (customer.c_custkey = orders.o_custkey)
+                                 ->  Index Scan using customer_pkey on customer  (cost=0.43..66680.26 rows=1499989 width=148) (actual time=0.819..375.647 rows=1499997 loops=1)
+                                 ->  Sort  (cost=1571266.18..1572734.72 rows=587418 width=16) (actual time=11714.977..11817.737 rows=1145402 loops=1)
+                                       Sort Key: orders.o_custkey
+                                       Sort Method: external sort  Disk: 35280kB
+                                       ->  Hash Join  (cost=284442.67..1514979.70 rows=587418 width=16) (actual time=4873.669..11267.794 rows=1145402 loops=1)
+                                             Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                             ->  Index Only Scan using q10_idx_2 on lineitem  (cost=0.56..1191148.79 rows=15005255 width=16) (actual time=0.478..4768.207 rows=14808183 loops=1)
+                                                   Index Cond: (l_returnflag = 'R'::bpchar)
+                                                   Heap Fetches: 0
+                                             ->  Hash  (cost=277101.15..277101.15 rows=587276 width=8) (actual time=4871.863..4871.864 rows=573160 loops=1)
+                                                   Buckets: 1048576  Batches: 1  Memory Usage: 30582kB
+                                                   ->  Bitmap Heap Scan on orders  (cost=7024.01..277101.15 rows=587276 width=8) (actual time=111.418..4721.775 rows=573160 loops=1)
+                                                         Recheck Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                                                         Heap Blocks: exact=233346
+                                                         ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..6877.20 rows=587276 width=0) (actual time=64.702..64.702 rows=573160 loops=1)
+                                                               Index Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                           ->  Memoize  (cost=0.15..1.17 rows=1 width=30) (actual time=0.000..0.000 rows=1 loops=1145402)
+                                 Cache Key: customer.c_nationkey
+                                 Cache Mode: logical
+                                 Hits: 1145377  Misses: 25  Evictions: 0  Overflows: 0  Memory Usage: 4kB
+                                 ->  Index Scan using nation_pkey on nation  (cost=0.14..1.16 rows=1 width=30) (actual time=0.012..0.012 rows=1 loops=25)
+                                       Index Cond: (n_nationkey = customer.c_nationkey)
+ Planning Time: 35.099 ms
+ Execution Time: 14068.111 ms
+(37 rows)
+
+SET
+SET
+SET
+                                                                                            QUERY PLAN                                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1721644.49..1721644.54 rows=20 width=202) (actual time=10047.355..10047.360 rows=20 loops=1)
+   ->  Sort  (cost=1721644.49..1723113.03 rows=587418 width=202) (actual time=10047.354..10047.357 rows=20 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount)))) DESC
+         Sort Method: top-N heapsort  Memory: 33kB
+         ->  GroupAggregate  (cost=1571268.10..1706013.51 rows=587418 width=202) (actual time=7754.955..9931.455 rows=381205 loops=1)
+               Group Key: customer.c_custkey, nation.n_name
+               ->  Incremental Sort  (cost=1571268.10..1691328.06 rows=587418 width=182) (actual time=7754.942..9259.190 rows=1145402 loops=1)
+                     Sort Key: customer.c_custkey, nation.n_name
+                     Presorted Key: customer.c_custkey
+                     Full-sort Groups: 34068  Sort Method: quicksort  Average Memory: 31kB  Peak Memory: 31kB
+                     ->  Nested Loop  (cost=1571267.93..1664894.25 rows=587418 width=182) (actual time=7754.861..8904.379 rows=1145402 loops=1)
+                           ->  Merge Join  (cost=1571267.78..1650505.05 rows=587418 width=160) (actual time=7754.837..8516.360 rows=1145402 loops=1)
+                                 Merge Cond: (customer.c_custkey = orders.o_custkey)
+                                 ->  Index Scan using customer_pkey on customer  (cost=0.43..66680.26 rows=1499989 width=148) (actual time=0.031..317.054 rows=1499997 loops=1)
+                                 ->  Sort  (cost=1571266.18..1572734.72 rows=587418 width=16) (actual time=7754.793..7857.957 rows=1145402 loops=1)
+                                       Sort Key: orders.o_custkey
+                                       Sort Method: external sort  Disk: 35280kB
+                                       ->  Hash Join  (cost=284442.67..1514979.70 rows=587418 width=16) (actual time=1531.931..7312.267 rows=1145402 loops=1)
+                                             Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                             ->  Index Only Scan using q10_idx_2 on lineitem  (cost=0.56..1191148.79 rows=15005255 width=16) (actual time=0.031..4188.981 rows=14808183 loops=1)
+                                                   Index Cond: (l_returnflag = 'R'::bpchar)
+                                                   Heap Fetches: 0
+                                             ->  Hash  (cost=277101.15..277101.15 rows=587276 width=8) (actual time=1530.467..1530.468 rows=573160 loops=1)
+                                                   Buckets: 1048576  Batches: 1  Memory Usage: 30582kB
+                                                   ->  Bitmap Heap Scan on orders  (cost=7024.01..277101.15 rows=587276 width=8) (actual time=110.333..1413.449 rows=573160 loops=1)
+                                                         Recheck Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                                                         Heap Blocks: exact=233346
+                                                         ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..6877.20 rows=587276 width=0) (actual time=64.192..64.193 rows=573160 loops=1)
+                                                               Index Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                           ->  Memoize  (cost=0.15..1.17 rows=1 width=30) (actual time=0.000..0.000 rows=1 loops=1145402)
+                                 Cache Key: customer.c_nationkey
+                                 Cache Mode: logical
+                                 Hits: 1145377  Misses: 25  Evictions: 0  Overflows: 0  Memory Usage: 4kB
+                                 ->  Index Scan using nation_pkey on nation  (cost=0.14..1.16 rows=1 width=30) (actual time=0.002..0.002 rows=1 loops=25)
+                                       Index Cond: (n_nationkey = customer.c_nationkey)
+ Planning Time: 2.814 ms
+ Execution Time: 10051.876 ms
+(37 rows)
+
+query 11 run 1
+SET
+SET
+SET
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=608290.23..608290.23 rows=1 width=36) (actual time=3458.363..3458.370 rows=0 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=293188.55..293188.56 rows=1 width=32) (actual time=1377.508..1377.511 rows=1 loops=1)
+           ->  Hash Join  (cost=2341.31..290788.02 rows=320070 width=10) (actual time=3.197..1311.436 rows=320800 loops=1)
+                 Hash Cond: (partsupp_1.ps_suppkey = supplier_1.s_suppkey)
+                 ->  Seq Scan on partsupp partsupp_1  (cost=0.00..255239.46 rows=8001746 width=14) (actual time=0.020..611.143 rows=8000000 loops=1)
+                 ->  Hash  (cost=2291.31..2291.31 rows=4000 width=4) (actual time=3.129..3.131 rows=4010 loops=1)
+                       Buckets: 4096  Batches: 1  Memory Usage: 173kB
+                       ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=4) (actual time=0.792..2.782 rows=4010 loops=1)
+                             ->  Seq Scan on nation nation_1  (cost=0.00..1.31 rows=1 width=4) (actual time=0.007..0.008 rows=1 loops=1)
+                                   Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                                   Rows Removed by Filter: 24
+                             ->  Bitmap Heap Scan on supplier supplier_1  (cost=39.29..2250.00 rows=4000 width=8) (actual time=0.782..2.439 rows=4010 loops=1)
+                                   Recheck Cond: (s_nationkey = nation_1.n_nationkey)
+                                   Heap Blocks: exact=1869
+                                   ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.570..0.570 rows=4010 loops=1)
+                                         Index Cond: (s_nationkey = nation_1.n_nationkey)
+   ->  Sort  (cost=315101.67..315368.40 rows=106690 width=36) (actual time=3458.362..3458.364 rows=0 loops=1)
+         Sort Key: (sum((partsupp.ps_supplycost * (partsupp.ps_availqty)::numeric))) DESC
+         Sort Method: quicksort  Memory: 25kB
+         ->  HashAggregate  (cost=306641.49..314568.22 rows=106690 width=36) (actual time=3458.327..3458.329 rows=0 loops=1)
+               Group Key: partsupp.ps_partkey
+               Filter: (sum((partsupp.ps_supplycost * (partsupp.ps_availqty)::numeric)) > (InitPlan 1).col1)
+               Planned Partitions: 4  Batches: 5  Memory Usage: 65585kB  Disk Usage: 7312kB
+               Rows Removed by Filter: 301833
+               ->  Hash Join  (cost=2341.31..290788.02 rows=320070 width=14) (actual time=40.053..1744.842 rows=320800 loops=1)
+                     Hash Cond: (partsupp.ps_suppkey = supplier.s_suppkey)
+                     ->  Seq Scan on partsupp  (cost=0.00..255239.46 rows=8001746 width=18) (actual time=0.776..950.281 rows=8000000 loops=1)
+                     ->  Hash  (cost=2291.31..2291.31 rows=4000 width=4) (actual time=39.209..39.210 rows=4010 loops=1)
+                           Buckets: 4096  Batches: 1  Memory Usage: 173kB
+                           ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=4) (actual time=2.034..38.246 rows=4010 loops=1)
+                                 ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.318..0.321 rows=1 loops=1)
+                                       Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                                       Rows Removed by Filter: 24
+                                 ->  Bitmap Heap Scan on supplier  (cost=39.29..2250.00 rows=4000 width=8) (actual time=1.712..37.287 rows=4010 loops=1)
+                                       Recheck Cond: (s_nationkey = nation.n_nationkey)
+                                       Heap Blocks: exact=1869
+                                       ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.910..0.910 rows=4010 loops=1)
+                                             Index Cond: (s_nationkey = nation.n_nationkey)
+ Planning Time: 19.049 ms
+ Execution Time: 3461.171 ms
+(41 rows)
+
+SET
+SET
+SET
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=608290.23..608290.23 rows=1 width=36) (actual time=3039.943..3039.949 rows=0 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=293188.55..293188.56 rows=1 width=32) (actual time=1383.698..1383.701 rows=1 loops=1)
+           ->  Hash Join  (cost=2341.31..290788.02 rows=320070 width=10) (actual time=2.957..1316.655 rows=320800 loops=1)
+                 Hash Cond: (partsupp_1.ps_suppkey = supplier_1.s_suppkey)
+                 ->  Seq Scan on partsupp partsupp_1  (cost=0.00..255239.46 rows=8001746 width=14) (actual time=0.019..615.691 rows=8000000 loops=1)
+                 ->  Hash  (cost=2291.31..2291.31 rows=4000 width=4) (actual time=2.896..2.898 rows=4010 loops=1)
+                       Buckets: 4096  Batches: 1  Memory Usage: 173kB
+                       ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=4) (actual time=0.597..2.552 rows=4010 loops=1)
+                             ->  Seq Scan on nation nation_1  (cost=0.00..1.31 rows=1 width=4) (actual time=0.006..0.007 rows=1 loops=1)
+                                   Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                                   Rows Removed by Filter: 24
+                             ->  Bitmap Heap Scan on supplier supplier_1  (cost=39.29..2250.00 rows=4000 width=8) (actual time=0.588..2.224 rows=4010 loops=1)
+                                   Recheck Cond: (s_nationkey = nation_1.n_nationkey)
+                                   Heap Blocks: exact=1869
+                                   ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.378..0.378 rows=4010 loops=1)
+                                         Index Cond: (s_nationkey = nation_1.n_nationkey)
+   ->  Sort  (cost=315101.67..315368.40 rows=106690 width=36) (actual time=3039.942..3039.944 rows=0 loops=1)
+         Sort Key: (sum((partsupp.ps_supplycost * (partsupp.ps_availqty)::numeric))) DESC
+         Sort Method: quicksort  Memory: 25kB
+         ->  HashAggregate  (cost=306641.49..314568.22 rows=106690 width=36) (actual time=3039.912..3039.914 rows=0 loops=1)
+               Group Key: partsupp.ps_partkey
+               Filter: (sum((partsupp.ps_supplycost * (partsupp.ps_availqty)::numeric)) > (InitPlan 1).col1)
+               Planned Partitions: 4  Batches: 5  Memory Usage: 65585kB  Disk Usage: 7312kB
+               Rows Removed by Filter: 301833
+               ->  Hash Join  (cost=2341.31..290788.02 rows=320070 width=14) (actual time=3.684..1330.103 rows=320800 loops=1)
+                     Hash Cond: (partsupp.ps_suppkey = supplier.s_suppkey)
+                     ->  Seq Scan on partsupp  (cost=0.00..255239.46 rows=8001746 width=18) (actual time=0.044..622.341 rows=8000000 loops=1)
+                     ->  Hash  (cost=2291.31..2291.31 rows=4000 width=4) (actual time=3.607..3.608 rows=4010 loops=1)
+                           Buckets: 4096  Batches: 1  Memory Usage: 173kB
+                           ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=4) (actual time=0.499..3.209 rows=4010 loops=1)
+                                 ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.011..0.012 rows=1 loops=1)
+                                       Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                                       Rows Removed by Filter: 24
+                                 ->  Bitmap Heap Scan on supplier  (cost=39.29..2250.00 rows=4000 width=8) (actual time=0.485..2.861 rows=4010 loops=1)
+                                       Recheck Cond: (s_nationkey = nation.n_nationkey)
+                                       Heap Blocks: exact=1869
+                                       ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.268..0.268 rows=4010 loops=1)
+                                             Index Cond: (s_nationkey = nation.n_nationkey)
+ Planning Time: 1.563 ms
+ Execution Time: 3041.953 ms
+(41 rows)
+
+query 12 run 1
+SET
+SET
+SET
+                                                                                     QUERY PLAN                                                                                     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=685532.71..685532.71 rows=1 width=27) (actual time=5377.581..5377.584 rows=1 loops=1)
+   ->  Sort  (cost=685532.71..685532.73 rows=7 width=27) (actual time=5377.580..5377.581 rows=1 loops=1)
+         Sort Key: lineitem.l_shipmode
+         Sort Method: quicksort  Memory: 25kB
+         ->  HashAggregate  (cost=685532.61..685532.68 rows=7 width=27) (actual time=5377.543..5377.545 rows=2 loops=1)
+               Group Key: lineitem.l_shipmode
+               Batches: 1  Memory Usage: 24kB
+               ->  Hash Join  (cost=153829.56..680501.13 rows=287513 width=27) (actual time=1421.189..5266.294 rows=311258 loops=1)
+                     Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=20) (actual time=0.546..1489.323 rows=15000000 loops=1)
+                     ->  Hash  (cost=150235.65..150235.65 rows=287513 width=15) (actual time=1419.874..1419.874 rows=311258 loops=1)
+                           Buckets: 524288  Batches: 1  Memory Usage: 18687kB
+                           ->  Index Only Scan using q12_idx_1 on lineitem  (cost=0.43..150235.65 rows=287513 width=15) (actual time=0.360..1360.504 rows=311258 loops=1)
+                                 Index Cond: ((l_shipmode = ANY ('{SHIP,"REG AIR"}'::bpchar[])) AND (l_receiptdate >= '1994-01-01'::date) AND (l_receiptdate < '1995-01-01'::date))
+                                 Heap Fetches: 0
+ Planning Time: 29.299 ms
+ Execution Time: 5378.352 ms
+(17 rows)
+
+SET
+SET
+SET
+                                                                                     QUERY PLAN                                                                                     
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=685532.71..685532.71 rows=1 width=27) (actual time=4507.108..4507.110 rows=1 loops=1)
+   ->  Sort  (cost=685532.71..685532.73 rows=7 width=27) (actual time=4507.107..4507.109 rows=1 loops=1)
+         Sort Key: lineitem.l_shipmode
+         Sort Method: quicksort  Memory: 25kB
+         ->  HashAggregate  (cost=685532.61..685532.68 rows=7 width=27) (actual time=4507.092..4507.094 rows=2 loops=1)
+               Group Key: lineitem.l_shipmode
+               Batches: 1  Memory Usage: 24kB
+               ->  Hash Join  (cost=153829.56..680501.13 rows=287513 width=27) (actual time=1150.540..4397.453 rows=311258 loops=1)
+                     Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Seq Scan on orders  (cost=0.00..411284.25 rows=15001625 width=20) (actual time=0.045..1043.077 rows=15000000 loops=1)
+                     ->  Hash  (cost=150235.65..150235.65 rows=287513 width=15) (actual time=1149.772..1149.772 rows=311258 loops=1)
+                           Buckets: 524288  Batches: 1  Memory Usage: 18687kB
+                           ->  Index Only Scan using q12_idx_1 on lineitem  (cost=0.43..150235.65 rows=287513 width=15) (actual time=0.072..1096.758 rows=311258 loops=1)
+                                 Index Cond: ((l_shipmode = ANY ('{SHIP,"REG AIR"}'::bpchar[])) AND (l_receiptdate >= '1994-01-01'::date) AND (l_receiptdate < '1995-01-01'::date))
+                                 Heap Fetches: 0
+ Planning Time: 1.776 ms
+ Execution Time: 4507.204 ms
+(17 rows)
+
+query 13 run 1
+SET
+SET
+SET
+                                                                                    QUERY PLAN                                                                                     
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1421794.15..1421794.15 rows=1 width=16) (actual time=16492.343..16492.345 rows=1 loops=1)
+   ->  Sort  (cost=1421794.15..1421794.65 rows=200 width=16) (actual time=16492.341..16492.343 rows=1 loops=1)
+         Sort Key: (count(*)) DESC, (count(orders.o_orderkey)) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=1421791.15..1421793.15 rows=200 width=16) (actual time=16492.315..16492.322 rows=46 loops=1)
+               Group Key: count(orders.o_orderkey)
+               Batches: 1  Memory Usage: 40kB
+               ->  HashAggregate  (cost=1268275.07..1399291.31 rows=1499989 width=12) (actual time=14387.157..16324.514 rows=1500000 loops=1)
+                     Group Key: customer.c_custkey
+                     Planned Partitions: 4  Batches: 5  Memory Usage: 65585kB  Disk Usage: 212480kB
+                     ->  Hash Right Join  (cost=55342.12..664990.04 rows=14850093 width=8) (actual time=364.834..10594.617 rows=15337604 loops=1)
+                           Hash Cond: (orders.o_custkey = customer.c_custkey)
+                           ->  Seq Scan on orders  (cost=0.00..448788.31 rows=14850093 width=8) (actual time=0.637..4968.746 rows=14837583 loops=1)
+                                 Filter: ((o_comment)::text !~~ '%special%requests%'::text)
+                                 Rows Removed by Filter: 162417
+                           ->  Hash  (cost=30732.26..30732.26 rows=1499989 width=4) (actual time=361.593..361.593 rows=1500000 loops=1)
+                                 Buckets: 2097152  Batches: 2  Memory Usage: 42747kB
+                                 ->  Index Only Scan using customer_pkey on customer  (cost=0.43..30732.26 rows=1499989 width=4) (actual time=0.354..165.554 rows=1500000 loops=1)
+                                       Heap Fetches: 0
+ Planning Time: 16.670 ms
+ Execution Time: 16525.791 ms
+(21 rows)
+
+SET
+SET
+SET
+                                                                                    QUERY PLAN                                                                                     
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1421794.15..1421794.15 rows=1 width=16) (actual time=15952.439..15952.442 rows=1 loops=1)
+   ->  Sort  (cost=1421794.15..1421794.65 rows=200 width=16) (actual time=15952.437..15952.440 rows=1 loops=1)
+         Sort Key: (count(*)) DESC, (count(orders.o_orderkey)) DESC
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  HashAggregate  (cost=1421791.15..1421793.15 rows=200 width=16) (actual time=15952.411..15952.419 rows=46 loops=1)
+               Group Key: count(orders.o_orderkey)
+               Batches: 1  Memory Usage: 40kB
+               ->  HashAggregate  (cost=1268275.07..1399291.31 rows=1499989 width=12) (actual time=13836.843..15783.145 rows=1500000 loops=1)
+                     Group Key: customer.c_custkey
+                     Planned Partitions: 4  Batches: 5  Memory Usage: 65585kB  Disk Usage: 212480kB
+                     ->  Hash Right Join  (cost=55342.12..664990.04 rows=14850093 width=8) (actual time=326.971..10056.222 rows=15337604 loops=1)
+                           Hash Cond: (orders.o_custkey = customer.c_custkey)
+                           ->  Seq Scan on orders  (cost=0.00..448788.31 rows=14850093 width=8) (actual time=0.036..4514.128 rows=14837583 loops=1)
+                                 Filter: ((o_comment)::text !~~ '%special%requests%'::text)
+                                 Rows Removed by Filter: 162417
+                           ->  Hash  (cost=30732.26..30732.26 rows=1499989 width=4) (actual time=324.336..324.336 rows=1500000 loops=1)
+                                 Buckets: 2097152  Batches: 2  Memory Usage: 42747kB
+                                 ->  Index Only Scan using customer_pkey on customer  (cost=0.43..30732.26 rows=1499989 width=4) (actual time=0.030..135.051 rows=1500000 loops=1)
+                                       Heap Fetches: 0
+ Planning Time: 0.836 ms
+ Execution Time: 15986.607 ms
+(21 rows)
+
+query 14 run 1
+SET
+SET
+SET
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1299430.61..1299430.63 rows=1 width=32) (actual time=5059.818..5059.819 rows=1 loops=1)
+   ->  Aggregate  (cost=1299430.61..1299430.63 rows=1 width=32) (actual time=5059.816..5059.817 rows=1 loops=1)
+         ->  Merge Join  (cost=113.08..1285154.74 rows=815764 width=33) (actual time=0.887..4698.848 rows=772942 loops=1)
+               Merge Cond: (lineitem.l_partkey = part.p_partkey)
+               ->  Index Only Scan using q14_idx_1 on lineitem  (cost=0.56..1201126.44 rows=815764 width=16) (actual time=0.614..4026.277 rows=772942 loops=1)
+                     Index Cond: ((l_shipdate >= '1994-05-01'::date) AND (l_shipdate < '1994-06-01'::date))
+                     Heap Fetches: 0
+               ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..68832.17 rows=1999983 width=25) (actual time=0.268..369.194 rows=1999998 loops=1)
+                     Heap Fetches: 0
+ Planning Time: 31.064 ms
+ Execution Time: 5060.176 ms
+(11 rows)
+
+SET
+SET
+SET
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1299430.61..1299430.63 rows=1 width=32) (actual time=3864.137..3864.138 rows=1 loops=1)
+   ->  Aggregate  (cost=1299430.61..1299430.63 rows=1 width=32) (actual time=3864.135..3864.136 rows=1 loops=1)
+         ->  Merge Join  (cost=113.08..1285154.74 rows=815764 width=33) (actual time=0.064..3535.473 rows=772942 loops=1)
+               Merge Cond: (lineitem.l_partkey = part.p_partkey)
+               ->  Index Only Scan using q14_idx_1 on lineitem  (cost=0.56..1201126.44 rows=815764 width=16) (actual time=0.035..2966.956 rows=772942 loops=1)
+                     Index Cond: ((l_shipdate >= '1994-05-01'::date) AND (l_shipdate < '1994-06-01'::date))
+                     Heap Fetches: 0
+               ->  Index Only Scan using q2_idx_1 on part  (cost=0.43..68832.17 rows=1999983 width=25) (actual time=0.026..293.541 rows=1999998 loops=1)
+                     Heap Fetches: 0
+ Planning Time: 2.130 ms
+ Execution Time: 3864.182 ms
+(11 rows)
+
+query 15 run 1
+SET
+SET
+SET
+CREATE VIEW
+                                                                                   QUERY PLAN                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3783120.29..3783129.44 rows=1 width=103) (actual time=21509.495..21509.498 rows=1 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=1892040.96..1892040.97 rows=1 width=32) (actual time=6236.621..6236.622 rows=1 loops=1)
+           ->  HashAggregate  (cost=1889568.38..1890804.67 rows=98903 width=36) (actual time=6195.391..6230.832 rows=100000 loops=1)
+                 Group Key: lineitem_1.l_suppkey
+                 Batches: 1  Memory Usage: 43025kB
+                 ->  Bitmap Heap Scan on lineitem lineitem_1  (cost=42391.39..1865967.58 rows=2360080 width=16) (actual time=354.486..4764.347 rows=2265714 loops=1)
+                       Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                       Rows Removed by Index Recheck: 13223651
+                       Heap Blocks: exact=401153 lossy=267105
+                       ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..41801.37 rows=2360080 width=0) (actual time=268.297..268.298 rows=2265714 loops=1)
+                             Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+   ->  Merge Join  (cost=1891079.32..1895610.75 rows=495 width=103) (actual time=21509.493..21509.495 rows=1 loops=1)
+         Merge Cond: (supplier.s_suppkey = revenue0.supplier_no)
+         ->  Index Scan using supplier_pkey on supplier  (cost=0.29..4274.29 rows=100000 width=71) (actual time=0.518..18.806 rows=69998 loops=1)
+         ->  Sort  (cost=1891079.03..1891080.27 rows=495 width=36) (actual time=21486.575..21486.576 rows=1 loops=1)
+               Sort Key: revenue0.supplier_no
+               Sort Method: quicksort  Memory: 25kB
+               ->  Subquery Scan on revenue0  (cost=1889568.38..1891056.88 rows=495 width=36) (actual time=21461.645..21486.566 rows=1 loops=1)
+                     ->  HashAggregate  (cost=1889568.38..1891051.93 rows=495 width=36) (actual time=21461.644..21486.564 rows=1 loops=1)
+                           Group Key: lineitem.l_suppkey
+                           Filter: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount))) = (InitPlan 1).col1)
+                           Batches: 1  Memory Usage: 43025kB
+                           Rows Removed by Filter: 99999
+                           ->  Bitmap Heap Scan on lineitem  (cost=42391.39..1865967.58 rows=2360080 width=16) (actual time=418.796..12962.303 rows=2265714 loops=1)
+                                 Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                                 Rows Removed by Index Recheck: 13223651
+                                 Heap Blocks: exact=401153 lossy=267105
+                                 ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..41801.37 rows=2360080 width=0) (actual time=331.473..331.473 rows=2265714 loops=1)
+                                       Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+ Planning Time: 23.401 ms
+ Execution Time: 21511.810 ms
+(32 rows)
+
+DROP VIEW
+SET
+SET
+SET
+CREATE VIEW
+                                                                                   QUERY PLAN                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3783120.29..3783129.44 rows=1 width=103) (actual time=12961.861..12961.865 rows=1 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=1892040.96..1892040.97 rows=1 width=32) (actual time=6221.351..6221.352 rows=1 loops=1)
+           ->  HashAggregate  (cost=1889568.38..1890804.67 rows=98903 width=36) (actual time=6179.875..6215.536 rows=100000 loops=1)
+                 Group Key: lineitem_1.l_suppkey
+                 Batches: 1  Memory Usage: 43025kB
+                 ->  Bitmap Heap Scan on lineitem lineitem_1  (cost=42391.39..1865967.58 rows=2360080 width=16) (actual time=354.914..4762.237 rows=2265714 loops=1)
+                       Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                       Rows Removed by Index Recheck: 13223651
+                       Heap Blocks: exact=401153 lossy=267105
+                       ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..41801.37 rows=2360080 width=0) (actual time=268.782..268.783 rows=2265714 loops=1)
+                             Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+   ->  Merge Join  (cost=1891079.32..1895610.75 rows=495 width=103) (actual time=12961.860..12961.861 rows=1 loops=1)
+         Merge Cond: (supplier.s_suppkey = revenue0.supplier_no)
+         ->  Index Scan using supplier_pkey on supplier  (cost=0.29..4274.29 rows=100000 width=71) (actual time=0.051..12.217 rows=69998 loops=1)
+         ->  Sort  (cost=1891079.03..1891080.27 rows=495 width=36) (actual time=12945.642..12945.643 rows=1 loops=1)
+               Sort Key: revenue0.supplier_no
+               Sort Method: quicksort  Memory: 25kB
+               ->  Subquery Scan on revenue0  (cost=1889568.38..1891056.88 rows=495 width=36) (actual time=12920.681..12945.635 rows=1 loops=1)
+                     ->  HashAggregate  (cost=1889568.38..1891051.93 rows=495 width=36) (actual time=12920.680..12945.633 rows=1 loops=1)
+                           Group Key: lineitem.l_suppkey
+                           Filter: (sum((lineitem.l_extendedprice * ('1'::numeric - lineitem.l_discount))) = (InitPlan 1).col1)
+                           Batches: 1  Memory Usage: 43025kB
+                           Rows Removed by Filter: 99999
+                           ->  Bitmap Heap Scan on lineitem  (cost=42391.39..1865967.58 rows=2360080 width=16) (actual time=375.275..5244.229 rows=2265714 loops=1)
+                                 Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                                 Rows Removed by Index Recheck: 13223651
+                                 Heap Blocks: exact=401153 lossy=267105
+                                 ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..41801.37 rows=2360080 width=0) (actual time=289.354..289.354 rows=2265714 loops=1)
+                                       Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+ Planning Time: 1.719 ms
+ Execution Time: 12963.629 ms
+(32 rows)
+
+DROP VIEW
+query 16 run 1
+SET
+SET
+SET
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=369418.62..369418.63 rows=1 width=44) (actual time=7552.954..7552.957 rows=1 loops=1)
+   ->  Sort  (cost=369418.62..369800.24 rows=152645 width=44) (actual time=7552.953..7552.955 rows=1 loops=1)
+         Sort Key: (count(DISTINCT partsupp.ps_suppkey)) DESC, part.p_brand, part.p_type, part.p_size
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  GroupAggregate  (cost=359830.85..368655.40 rows=152645 width=44) (actual time=6811.765..7548.492 rows=27838 loops=1)
+               Group Key: part.p_brand, part.p_type, part.p_size
+               ->  Sort  (cost=359830.85..361290.47 rows=583848 width=40) (actual time=6811.718..7353.885 rows=1186319 loops=1)
+                     Sort Key: part.p_brand, part.p_type, part.p_size, partsupp.ps_suppkey
+                     Sort Method: external merge  Disk: 60592kB
+                     ->  Hash Join  (cost=98100.26..292507.13 rows=583848 width=40) (actual time=755.391..3049.768 rows=1186319 loops=1)
+                           Hash Cond: (partsupp.ps_partkey = part.p_partkey)
+                           ->  Index Only Scan using partsupp_pkey on partsupp  (cost=3471.46..187376.01 rows=4000873 width=8) (actual time=33.229..1543.962 rows=7995520 loops=1)
+                                 Filter: (NOT (ANY (ps_suppkey = (hashed SubPlan 1).col1)))
+                                 Rows Removed by Filter: 4480
+                                 Heap Fetches: 0
+                                 SubPlan 1
+                                   ->  Seq Scan on supplier  (cost=0.00..3471.00 rows=10 width=4) (actual time=1.438..32.917 rows=56 loops=1)
+                                         Filter: ((s_comment)::text ~~ '%Customer%Complaints%'::text)
+                                         Rows Removed by Filter: 99944
+                           ->  Hash  (cost=90980.58..90980.58 rows=291858 width=40) (actual time=721.487..721.487 rows=296733 loops=1)
+                                 Buckets: 524288  Batches: 1  Memory Usage: 25593kB
+                                 ->  Seq Scan on part  (cost=0.00..90980.58 rows=291858 width=40) (actual time=0.767..659.953 rows=296733 loops=1)
+                                       Filter: ((p_brand <> 'Brand#12'::bpchar) AND ((p_type)::text !~~ 'SMALL BRUSHED%'::text) AND (p_size = ANY ('{12,32,36,26,40,34,49,9}'::integer[])))
+                                       Rows Removed by Filter: 1703267
+ Planning Time: 22.650 ms
+ Execution Time: 7561.654 ms
+(26 rows)
+
+SET
+SET
+SET
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=369418.62..369418.63 rows=1 width=44) (actual time=7157.243..7157.246 rows=1 loops=1)
+   ->  Sort  (cost=369418.62..369800.24 rows=152645 width=44) (actual time=7157.242..7157.244 rows=1 loops=1)
+         Sort Key: (count(DISTINCT partsupp.ps_suppkey)) DESC, part.p_brand, part.p_type, part.p_size
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  GroupAggregate  (cost=359830.85..368655.40 rows=152645 width=44) (actual time=6414.424..7152.772 rows=27838 loops=1)
+               Group Key: part.p_brand, part.p_type, part.p_size
+               ->  Sort  (cost=359830.85..361290.47 rows=583848 width=40) (actual time=6414.378..6958.368 rows=1186319 loops=1)
+                     Sort Key: part.p_brand, part.p_type, part.p_size, partsupp.ps_suppkey
+                     Sort Method: external merge  Disk: 60592kB
+                     ->  Hash Join  (cost=98100.26..292507.13 rows=583848 width=40) (actual time=542.261..2654.693 rows=1186319 loops=1)
+                           Hash Cond: (partsupp.ps_partkey = part.p_partkey)
+                           ->  Index Only Scan using partsupp_pkey on partsupp  (cost=3471.46..187376.01 rows=4000873 width=8) (actual time=19.372..1370.778 rows=7995520 loops=1)
+                                 Filter: (NOT (ANY (ps_suppkey = (hashed SubPlan 1).col1)))
+                                 Rows Removed by Filter: 4480
+                                 Heap Fetches: 0
+                                 SubPlan 1
+                                   ->  Seq Scan on supplier  (cost=0.00..3471.00 rows=10 width=4) (actual time=0.088..19.331 rows=56 loops=1)
+                                         Filter: ((s_comment)::text ~~ '%Customer%Complaints%'::text)
+                                         Rows Removed by Filter: 99944
+                           ->  Hash  (cost=90980.58..90980.58 rows=291858 width=40) (actual time=522.219..522.220 rows=296733 loops=1)
+                                 Buckets: 524288  Batches: 1  Memory Usage: 25593kB
+                                 ->  Seq Scan on part  (cost=0.00..90980.58 rows=291858 width=40) (actual time=0.020..463.078 rows=296733 loops=1)
+                                       Filter: ((p_brand <> 'Brand#12'::bpchar) AND ((p_type)::text !~~ 'SMALL BRUSHED%'::text) AND (p_size = ANY ('{12,32,36,26,40,34,49,9}'::integer[])))
+                                       Rows Removed by Filter: 1703267
+ Planning Time: 1.170 ms
+ Execution Time: 7165.682 ms
+(26 rows)
+
+query 17 run 1
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1772876.09..1772876.11 rows=1 width=32) (actual time=26562.162..26562.165 rows=1 loops=1)
+   ->  Aggregate  (cost=1772876.09..1772876.11 rows=1 width=32) (actual time=26562.161..26562.163 rows=1 loops=1)
+         ->  Nested Loop  (cost=71090.60..1772828.00 rows=19238 width=8) (actual time=462.418..26559.433 rows=5319 loops=1)
+               Join Filter: (part.p_partkey = lineitem.l_partkey)
+               ->  Merge Join  (cost=71090.04..1766904.79 rows=1924 width=40) (actual time=461.462..25455.508 rows=1996 loops=1)
+                     Merge Cond: (part.p_partkey = lineitem_1.l_partkey)
+                     ->  Sort  (cost=71089.47..71094.44 rows=1985 width=4) (actual time=451.073..452.204 rows=1996 loops=1)
+                           Sort Key: part.p_partkey
+                           Sort Method: quicksort  Memory: 49kB
+                           ->  Seq Scan on part  (cost=0.00..70980.74 rows=1985 width=4) (actual time=1.184..450.831 rows=1996 loops=1)
+                                 Filter: ((p_brand = 'Brand#22'::bpchar) AND (p_container = 'LG BOX'::bpchar))
+                                 Rows Removed by Filter: 1998004
+                     ->  GroupAggregate  (cost=0.56..1690939.42 rows=1938692 width=36) (actual time=2.331..24855.897 rows=1999332 loops=1)
+                           Group Key: lineitem_1.l_partkey
+                           ->  Index Only Scan using q17_idx_1 on lineitem lineitem_1  (cost=0.56..1361913.92 rows=59989024 width=9) (actual time=1.135..16751.298 rows=59965964 loops=1)
+                                 Heap Fetches: 0
+               ->  Index Only Scan using q9_idx_1 on lineitem  (cost=0.56..2.95 rows=10 width=17) (actual time=0.504..0.550 rows=3 loops=1996)
+                     Index Cond: ((l_partkey = lineitem_1.l_partkey) AND (l_quantity < ((0.2 * avg(lineitem_1.l_quantity)))))
+                     Heap Fetches: 0
+ Planning Time: 29.506 ms
+ Execution Time: 26562.450 ms
+(21 rows)
+
+SET
+SET
+SET
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1772876.09..1772876.11 rows=1 width=32) (actual time=24105.959..24105.961 rows=1 loops=1)
+   ->  Aggregate  (cost=1772876.09..1772876.11 rows=1 width=32) (actual time=24105.958..24105.959 rows=1 loops=1)
+         ->  Nested Loop  (cost=71090.60..1772828.00 rows=19238 width=8) (actual time=327.484..24105.096 rows=5319 loops=1)
+               Join Filter: (part.p_partkey = lineitem.l_partkey)
+               ->  Merge Join  (cost=71090.04..1766904.79 rows=1924 width=40) (actual time=327.461..24073.559 rows=1996 loops=1)
+                     Merge Cond: (part.p_partkey = lineitem_1.l_partkey)
+                     ->  Sort  (cost=71089.47..71094.44 rows=1985 width=4) (actual time=319.774..320.204 rows=1996 loops=1)
+                           Sort Key: part.p_partkey
+                           Sort Method: quicksort  Memory: 49kB
+                           ->  Seq Scan on part  (cost=0.00..70980.74 rows=1985 width=4) (actual time=0.165..319.588 rows=1996 loops=1)
+                                 Filter: ((p_brand = 'Brand#22'::bpchar) AND (p_container = 'LG BOX'::bpchar))
+                                 Rows Removed by Filter: 1998004
+                     ->  GroupAggregate  (cost=0.56..1690939.42 rows=1938692 width=36) (actual time=0.073..23613.683 rows=1999332 loops=1)
+                           Group Key: lineitem_1.l_partkey
+                           ->  Index Only Scan using q17_idx_1 on lineitem lineitem_1  (cost=0.56..1361913.92 rows=59989024 width=9) (actual time=0.038..15631.636 rows=59965964 loops=1)
+                                 Heap Fetches: 0
+               ->  Index Only Scan using q9_idx_1 on lineitem  (cost=0.56..2.95 rows=10 width=17) (actual time=0.013..0.015 rows=3 loops=1996)
+                     Index Cond: ((l_partkey = lineitem_1.l_partkey) AND (l_quantity < ((0.2 * avg(lineitem_1.l_quantity)))))
+                     Heap Fetches: 0
+ Planning Time: 2.069 ms
+ Execution Time: 24106.014 ms
+(21 rows)
+
+query 18 run 1
+SET
+SET
+SET
+                                                                                                   QUERY PLAN                                                                                                    
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7005233.67..7005233.92 rows=100 width=71) (actual time=30864.959..30864.972 rows=99 loops=1)
+   ->  Sort  (cost=7005233.67..7055209.96 rows=19990516 width=71) (actual time=30864.958..30864.965 rows=99 loops=1)
+         Sort Key: orders.o_totalprice DESC, orders.o_orderdate
+         Sort Method: quicksort  Memory: 31kB
+         ->  GroupAggregate  (cost=3380154.36..6241210.52 rows=19990516 width=71) (actual time=23158.985..30864.861 rows=99 loops=1)
+               Group Key: orders.o_orderkey, customer.c_custkey
+               ->  Incremental Sort  (cost=3380154.36..5841400.20 rows=19990516 width=44) (actual time=23158.973..30864.572 rows=693 loops=1)
+                     Sort Key: orders.o_orderkey, customer.c_custkey
+                     Presorted Key: orders.o_orderkey
+                     Full-sort Groups: 20  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                     ->  Merge Join  (cost=3380154.23..5116438.17 rows=19990516 width=44) (actual time=22812.407..30864.167 rows=693 loops=1)
+                           Merge Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                           ->  Sort  (cost=3380151.71..3392649.42 rows=4999085 width=43) (actual time=22636.978..22637.033 rows=99 loops=1)
+                                 Sort Key: orders.o_orderkey
+                                 Sort Method: quicksort  Memory: 31kB
+                                 ->  Hash Join  (cost=78486.75..2714077.70 rows=4999085 width=43) (actual time=1792.541..22636.858 rows=99 loops=1)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Merge Join  (cost=1.00..2555096.32 rows=4999085 width=24) (actual time=503.200..21957.681 rows=99 loops=1)
+                                             Merge Cond: (orders.o_orderkey = lineitem_1.l_orderkey)
+                                             ->  Index Scan using orders_pkey on orders  (cost=0.43..568555.81 rows=15001625 width=20) (actual time=0.618..3419.203 rows=14982724 loops=1)
+                                             ->  GroupAggregate  (cost=0.56..1886547.88 rows=4999085 width=4) (actual time=391.403..17669.659 rows=99 loops=1)
+                                                   Group Key: lineitem_1.l_orderkey
+                                                   Filter: (sum(lineitem_1.l_quantity) > '313'::numeric)
+                                                   Rows Removed by Filter: 14999901
+                                                   ->  Index Only Scan using q18_idx_1 on lineitem lineitem_1  (cost=0.56..1361643.92 rows=59989024 width=9) (actual time=0.455..6752.321 rows=59986052 loops=1)
+                                                         Heap Fetches: 0
+                                       ->  Hash  (cost=50946.89..50946.89 rows=1499989 width=23) (actual time=599.595..599.595 rows=1500000 loops=1)
+                                             Buckets: 1048576  Batches: 2  Memory Usage: 49242kB
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=23) (actual time=0.912..345.319 rows=1500000 loops=1)
+                           ->  Index Only Scan using q18_idx_1 on lineitem  (cost=0.56..1361643.92 rows=59989024 width=9) (actual time=0.039..5724.419 rows=59916431 loops=1)
+                                 Heap Fetches: 0
+ Planning Time: 36.957 ms
+ Execution Time: 30865.442 ms
+(33 rows)
+
+SET
+SET
+SET
+                                                                                                   QUERY PLAN                                                                                                    
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7005233.67..7005233.92 rows=100 width=71) (actual time=29296.815..29296.828 rows=99 loops=1)
+   ->  Sort  (cost=7005233.67..7055209.96 rows=19990516 width=71) (actual time=29296.813..29296.820 rows=99 loops=1)
+         Sort Key: orders.o_totalprice DESC, orders.o_orderdate
+         Sort Method: quicksort  Memory: 31kB
+         ->  GroupAggregate  (cost=3380154.36..6241210.52 rows=19990516 width=71) (actual time=21556.539..29296.716 rows=99 loops=1)
+               Group Key: orders.o_orderkey, customer.c_custkey
+               ->  Incremental Sort  (cost=3380154.36..5841400.20 rows=19990516 width=44) (actual time=21556.527..29296.430 rows=693 loops=1)
+                     Sort Key: orders.o_orderkey, customer.c_custkey
+                     Presorted Key: orders.o_orderkey
+                     Full-sort Groups: 20  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                     ->  Merge Join  (cost=3380154.23..5116438.17 rows=19990516 width=44) (actual time=21208.471..29296.032 rows=693 loops=1)
+                           Merge Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                           ->  Sort  (cost=3380151.71..3392649.42 rows=4999085 width=43) (actual time=21032.228..21032.285 rows=99 loops=1)
+                                 Sort Key: orders.o_orderkey
+                                 Sort Method: quicksort  Memory: 31kB
+                                 ->  Hash Join  (cost=78486.75..2714077.70 rows=4999085 width=43) (actual time=1535.028..21032.118 rows=99 loops=1)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Merge Join  (cost=1.00..2555096.32 rows=4999085 width=24) (actual time=430.084..20470.725 rows=99 loops=1)
+                                             Merge Cond: (orders.o_orderkey = lineitem_1.l_orderkey)
+                                             ->  Index Scan using orders_pkey on orders  (cost=0.43..568555.81 rows=15001625 width=20) (actual time=0.031..2663.211 rows=14982724 loops=1)
+                                             ->  GroupAggregate  (cost=0.56..1886547.88 rows=4999085 width=4) (actual time=342.392..16962.731 rows=99 loops=1)
+                                                   Group Key: lineitem_1.l_orderkey
+                                                   Filter: (sum(lineitem_1.l_quantity) > '313'::numeric)
+                                                   Rows Removed by Filter: 14999901
+                                                   ->  Index Only Scan using q18_idx_1 on lineitem lineitem_1  (cost=0.56..1361643.92 rows=59989024 width=9) (actual time=0.017..6178.586 rows=59986052 loops=1)
+                                                         Heap Fetches: 0
+                                       ->  Hash  (cost=50946.89..50946.89 rows=1499989 width=23) (actual time=480.756..480.757 rows=1500000 loops=1)
+                                             Buckets: 1048576  Batches: 2  Memory Usage: 49242kB
+                                             ->  Seq Scan on customer  (cost=0.00..50946.89 rows=1499989 width=23) (actual time=0.034..230.874 rows=1500000 loops=1)
+                           ->  Index Only Scan using q18_idx_1 on lineitem  (cost=0.56..1361643.92 rows=59989024 width=9) (actual time=0.035..5739.488 rows=59916431 loops=1)
+                                 Heap Fetches: 0
+ Planning Time: 2.693 ms
+ Execution Time: 29296.996 ms
+(33 rows)
+
+query 19 run 1
+SET
+SET
+SET
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=149580.38..149580.39 rows=1 width=32) (actual time=2505.235..2505.237 rows=1 loops=1)
+   ->  Aggregate  (cost=149580.38..149580.39 rows=1 width=32) (actual time=2505.233..2505.234 rows=1 loops=1)
+         ->  Nested Loop  (cost=0.56..149572.36 rows=1069 width=12) (actual time=11.206..2503.388 rows=1063 loops=1)
+               ->  Seq Scan on part  (cost=0.00..125980.28 rows=4528 width=30) (actual time=2.282..747.677 rows=4781 loops=1)
+                     Filter: ((p_size >= 1) AND (((p_brand = 'Brand#24'::bpchar) AND (p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (p_size <= 5)) OR ((p_brand = 'Brand#43'::bpchar) AND (p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (p_size <= 10)) OR ((p_brand = 'Brand#44'::bpchar) AND (p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (p_size <= 15))))
+                     Rows Removed by Filter: 1995219
+               ->  Index Only Scan using q19_idx_1 on lineitem  (cost=0.56..5.20 rows=1 width=21) (actual time=0.363..0.366 rows=0 loops=4781)
+                     Index Cond: ((l_partkey = part.p_partkey) AND (l_shipmode = ANY ('{AIR,"AIR REG"}'::bpchar[])) AND (l_shipinstruct = 'DELIVER IN PERSON'::bpchar))
+                     Filter: ((((l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric)) OR ((l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric)) OR ((l_quantity >= '20'::numeric) AND (l_quantity <= '30'::numeric))) AND (((part.p_brand = 'Brand#24'::bpchar) AND (part.p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric) AND (part.p_size <= 5)) OR ((part.p_brand = 'Brand#43'::bpchar) AND (part.p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric) AND (part.p_size <= 10)) OR ((part.p_brand = 'Brand#44'::bpchar) AND (part.p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (l_quantity >= '20'::numeric) AND (l_quantity <= '30'::numeric) AND (part.p_size <= 15))))
+                     Rows Removed by Filter: 1
+                     Heap Fetches: 0
+ Planning Time: 30.782 ms
+ Execution Time: 2506.246 ms
+(13 rows)
+
+SET
+SET
+SET
+                                                                                                                                                                                                                                                                                                                                                                                                                                                        QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=149580.38..149580.39 rows=1 width=32) (actual time=506.043..506.044 rows=1 loops=1)
+   ->  Aggregate  (cost=149580.38..149580.39 rows=1 width=32) (actual time=506.042..506.042 rows=1 loops=1)
+         ->  Nested Loop  (cost=0.56..149572.36 rows=1069 width=12) (actual time=1.284..505.427 rows=1063 loops=1)
+               ->  Seq Scan on part  (cost=0.00..125980.28 rows=4528 width=30) (actual time=0.225..464.014 rows=4781 loops=1)
+                     Filter: ((p_size >= 1) AND (((p_brand = 'Brand#24'::bpchar) AND (p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (p_size <= 5)) OR ((p_brand = 'Brand#43'::bpchar) AND (p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (p_size <= 10)) OR ((p_brand = 'Brand#44'::bpchar) AND (p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (p_size <= 15))))
+                     Rows Removed by Filter: 1995219
+               ->  Index Only Scan using q19_idx_1 on lineitem  (cost=0.56..5.20 rows=1 width=21) (actual time=0.008..0.008 rows=0 loops=4781)
+                     Index Cond: ((l_partkey = part.p_partkey) AND (l_shipmode = ANY ('{AIR,"AIR REG"}'::bpchar[])) AND (l_shipinstruct = 'DELIVER IN PERSON'::bpchar))
+                     Filter: ((((l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric)) OR ((l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric)) OR ((l_quantity >= '20'::numeric) AND (l_quantity <= '30'::numeric))) AND (((part.p_brand = 'Brand#24'::bpchar) AND (part.p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric) AND (part.p_size <= 5)) OR ((part.p_brand = 'Brand#43'::bpchar) AND (part.p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (l_quantity >= '10'::numeric) AND (l_quantity <= '20'::numeric) AND (part.p_size <= 10)) OR ((part.p_brand = 'Brand#44'::bpchar) AND (part.p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (l_quantity >= '20'::numeric) AND (l_quantity <= '30'::numeric) AND (part.p_size <= 15))))
+                     Rows Removed by Filter: 1
+                     Heap Fetches: 0
+ Planning Time: 2.919 ms
+ Execution Time: 506.098 ms
+(13 rows)
+
+query 20 run 1
+SET
+SET
+SET
+                                                                                 QUERY PLAN                                                                                  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2772929.90..2772929.91 rows=1 width=51) (actual time=37028.744..37028.748 rows=1 loops=1)
+   ->  Sort  (cost=2772929.90..2772929.91 rows=1 width=51) (actual time=37028.742..37028.746 rows=1 loops=1)
+         Sort Key: supplier.s_name
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  Nested Loop Semi Join  (cost=2571462.06..2772929.89 rows=1 width=51) (actual time=15916.465..37026.993 rows=1821 loops=1)
+               Join Filter: (supplier.s_suppkey = lineitem.l_suppkey)
+               Rows Removed by Join Filter: 183418712
+               ->  Nested Loop  (cost=0.00..4472.31 rows=4000 width=55) (actual time=0.792..26.703 rows=4095 loops=1)
+                     Join Filter: (supplier.s_nationkey = nation.n_nationkey)
+                     Rows Removed by Join Filter: 95905
+                     ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.266..0.269 rows=1 loops=1)
+                           Filter: (n_name = 'IRAQ'::bpchar)
+                           Rows Removed by Filter: 24
+                     ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=59) (actual time=0.519..19.164 rows=100000 loops=1)
+               ->  Materialize  (cost=2571462.06..2768277.59 rows=3 width=8) (actual time=3.523..6.703 rows=44791 loops=4095)
+                     Storage: Memory  Maximum Storage: 2356kB
+                     ->  Hash Join  (cost=2571462.06..2768277.57 rows=3 width=8) (actual time=14428.376..21101.580 rows=59002 loops=1)
+                           Hash Cond: ((lineitem.l_partkey = partsupp.ps_partkey) AND (lineitem.l_suppkey = partsupp.ps_suppkey))
+                           Join Filter: ((partsupp.ps_availqty)::numeric > ((0.5 * sum(lineitem.l_quantity))))
+                           Rows Removed by Join Filter: 123
+                           ->  HashAggregate  (cost=2449875.74..2610494.74 rows=4826186 width=40) (actual time=13744.274..19617.158 rows=5448842 loops=1)
+                                 Group Key: lineitem.l_partkey, lineitem.l_suppkey
+                                 Planned Partitions: 32  Batches: 161  Memory Usage: 65809kB  Disk Usage: 358152kB
+                                 ->  Seq Scan on lineitem  (cost=0.00..2024978.36 rows=9034363 width=13) (actual time=0.828..9898.554 rows=9123688 loops=1)
+                                       Filter: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1997-01-01'::date))
+                                       Rows Removed by Filter: 50862364
+                           ->  Hash  (cost=120373.93..120373.93 rows=80826 width=16) (actual time=683.787..683.788 rows=86872 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 5097kB
+                                 ->  Nested Loop  (cost=0.86..120373.93 rows=80826 width=16) (actual time=0.042..663.194 rows=86872 loops=1)
+                                       ->  Index Only Scan using q20_idx_2 on part  (cost=0.43..64306.13 rows=20202 width=4) (actual time=0.022..313.206 rows=21718 loops=1)
+                                             Filter: ((p_name)::text ~~ 'olive%'::text)
+                                             Rows Removed by Filter: 1978282
+                                             Heap Fetches: 0
+                                       ->  Index Only Scan using q20_idx_1 on partsupp  (cost=0.43..2.61 rows=17 width=12) (actual time=0.015..0.015 rows=4 loops=21718)
+                                             Index Cond: (ps_partkey = part.p_partkey)
+                                             Heap Fetches: 0
+ Planning Time: 39.699 ms
+ Execution Time: 37070.559 ms
+(38 rows)
+
+SET
+SET
+SET
+                                                                                 QUERY PLAN                                                                                  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2772929.90..2772929.91 rows=1 width=51) (actual time=34268.716..34268.720 rows=1 loops=1)
+   ->  Sort  (cost=2772929.90..2772929.91 rows=1 width=51) (actual time=34268.715..34268.718 rows=1 loops=1)
+         Sort Key: supplier.s_name
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  Nested Loop Semi Join  (cost=2571462.06..2772929.89 rows=1 width=51) (actual time=13256.426..34266.953 rows=1821 loops=1)
+               Join Filter: (supplier.s_suppkey = lineitem.l_suppkey)
+               Rows Removed by Join Filter: 183418712
+               ->  Nested Loop  (cost=0.00..4472.31 rows=4000 width=55) (actual time=0.032..16.763 rows=4095 loops=1)
+                     Join Filter: (supplier.s_nationkey = nation.n_nationkey)
+                     Rows Removed by Join Filter: 95905
+                     ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.014..0.017 rows=1 loops=1)
+                           Filter: (n_name = 'IRAQ'::bpchar)
+                           Rows Removed by Filter: 24
+                     ->  Seq Scan on supplier  (cost=0.00..3221.00 rows=100000 width=59) (actual time=0.014..7.157 rows=100000 loops=1)
+               ->  Materialize  (cost=2571462.06..2768277.59 rows=3 width=8) (actual time=2.873..6.027 rows=44791 loops=4095)
+                     Storage: Memory  Maximum Storage: 2356kB
+                     ->  Hash Join  (cost=2571462.06..2768277.57 rows=3 width=8) (actual time=11766.489..18449.771 rows=59002 loops=1)
+                           Hash Cond: ((lineitem.l_partkey = partsupp.ps_partkey) AND (lineitem.l_suppkey = partsupp.ps_suppkey))
+                           Join Filter: ((partsupp.ps_availqty)::numeric > ((0.5 * sum(lineitem.l_quantity))))
+                           Rows Removed by Join Filter: 123
+                           ->  HashAggregate  (cost=2449875.74..2610494.74 rows=4826186 width=40) (actual time=11478.215..17364.378 rows=5448842 loops=1)
+                                 Group Key: lineitem.l_partkey, lineitem.l_suppkey
+                                 Planned Partitions: 32  Batches: 161  Memory Usage: 65809kB  Disk Usage: 358152kB
+                                 ->  Seq Scan on lineitem  (cost=0.00..2024978.36 rows=9034363 width=13) (actual time=0.042..7822.989 rows=9123688 loops=1)
+                                       Filter: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1997-01-01'::date))
+                                       Rows Removed by Filter: 50862364
+                           ->  Hash  (cost=120373.93..120373.93 rows=80826 width=16) (actual time=287.982..287.984 rows=86872 loops=1)
+                                 Buckets: 131072  Batches: 1  Memory Usage: 5097kB
+                                 ->  Nested Loop  (cost=0.86..120373.93 rows=80826 width=16) (actual time=0.027..271.047 rows=86872 loops=1)
+                                       ->  Index Only Scan using q20_idx_2 on part  (cost=0.43..64306.13 rows=20202 width=4) (actual time=0.020..207.159 rows=21718 loops=1)
+                                             Filter: ((p_name)::text ~~ 'olive%'::text)
+                                             Rows Removed by Filter: 1978282
+                                             Heap Fetches: 0
+                                       ->  Index Only Scan using q20_idx_1 on partsupp  (cost=0.43..2.61 rows=17 width=12) (actual time=0.002..0.002 rows=4 loops=21718)
+                                             Index Cond: (ps_partkey = part.p_partkey)
+                                             Heap Fetches: 0
+ Planning Time: 2.418 ms
+ Execution Time: 34310.077 ms
+(38 rows)
+
+query 21 run 1
+SET
+SET
+SET
+                                                                                               QUERY PLAN                                                                                                
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1063805.34..1063805.35 rows=1 width=34) (actual time=17567.795..17567.809 rows=100 loops=1)
+   ->  Sort  (cost=1063805.34..1063805.35 rows=1 width=34) (actual time=17567.794..17567.802 rows=100 loops=1)
+         Sort Key: (count(*)) DESC, supplier.s_name
+         Sort Method: top-N heapsort  Memory: 37kB
+         ->  GroupAggregate  (cost=1063805.31..1063805.33 rows=1 width=34) (actual time=17560.843..17566.416 rows=3991 loops=1)
+               Group Key: supplier.s_name
+               ->  Sort  (cost=1063805.31..1063805.32 rows=1 width=26) (actual time=17560.835..17562.395 rows=39281 loops=1)
+                     Sort Key: supplier.s_name
+                     Sort Method: quicksort  Memory: 1537kB
+                     ->  Nested Loop Semi Join  (cost=587927.07..1063805.30 rows=1 width=26) (actual time=7152.124..17398.365 rows=39281 loops=1)
+                           Join Filter: (l2.l_suppkey <> l1.l_suppkey)
+                           Rows Removed by Join Filter: 27756
+                           ->  Nested Loop  (cost=587926.51..1063802.65 rows=1 width=38) (actual time=7152.116..13545.126 rows=65960 loops=1)
+                                 ->  Merge Anti Join  (cost=587926.07..1063800.21 rows=1 width=34) (actual time=7152.099..12840.434 rows=134155 loops=1)
+                                       Merge Cond: (l1.l_orderkey = l3.l_orderkey)
+                                       Join Filter: (l3.l_suppkey <> l1.l_suppkey)
+                                       Rows Removed by Join Filter: 551044
+                                       ->  Sort  (cost=587925.51..589925.14 rows=799854 width=34) (actual time=7152.068..7361.465 rows=1514267 loops=1)
+                                             Sort Key: l1.l_orderkey
+                                             Sort Method: external merge  Disk: 68176kB
+                                             ->  Hash Join  (cost=2341.88..493879.81 rows=799854 width=34) (actual time=41.683..6874.645 rows=1514267 loops=1)
+                                                   Hash Cond: (l1.l_suppkey = supplier.s_suppkey)
+                                                   ->  Index Only Scan using q21_idx_2 on lineitem l1  (cost=0.56..408553.68 rows=19996341 width=8) (actual time=0.462..4199.788 rows=37929348 loops=1)
+                                                         Heap Fetches: 0
+                                                   ->  Hash  (cost=2291.31..2291.31 rows=4000 width=30) (actual time=41.204..41.205 rows=3991 loops=1)
+                                                         Buckets: 4096  Batches: 1  Memory Usage: 282kB
+                                                         ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=30) (actual time=1.746..39.768 rows=3991 loops=1)
+                                                               ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.165..0.169 rows=1 loops=1)
+                                                                     Filter: (n_name = 'PERU'::bpchar)
+                                                                     Rows Removed by Filter: 24
+                                                               ->  Bitmap Heap Scan on supplier  (cost=39.29..2250.00 rows=4000 width=34) (actual time=1.578..38.489 rows=3991 loops=1)
+                                                                     Recheck Cond: (s_nationkey = nation.n_nationkey)
+                                                                     Heap Blocks: exact=1865
+                                                                     ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.761..0.761 rows=3991 loops=1)
+                                                                           Index Cond: (s_nationkey = nation.n_nationkey)
+                                       ->  Index Only Scan using q21_idx_2 on lineitem l3  (cost=0.56..408553.68 rows=19996341 width=8) (actual time=0.022..3553.779 rows=37966635 loops=1)
+                                             Heap Fetches: 0
+                                 ->  Index Only Scan using q21_idx_3 on orders  (cost=0.43..2.45 rows=1 width=4) (actual time=0.005..0.005 rows=0 loops=134155)
+                                       Index Cond: ((o_orderkey = l1.l_orderkey) AND (o_orderstatus = 'F'::bpchar))
+                                       Heap Fetches: 0
+                           ->  Index Only Scan using q21_idx_1 on lineitem l2  (cost=0.56..2.63 rows=4 width=8) (actual time=0.058..0.058 rows=1 loops=65960)
+                                 Index Cond: (l_orderkey = orders.o_orderkey)
+                                 Heap Fetches: 0
+ Planning Time: 33.119 ms
+ Execution Time: 17577.305 ms
+(45 rows)
+
+SET
+SET
+SET
+                                                                                               QUERY PLAN                                                                                                
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1063805.34..1063805.35 rows=1 width=34) (actual time=12661.915..12661.929 rows=100 loops=1)
+   ->  Sort  (cost=1063805.34..1063805.35 rows=1 width=34) (actual time=12661.914..12661.922 rows=100 loops=1)
+         Sort Key: (count(*)) DESC, supplier.s_name
+         Sort Method: top-N heapsort  Memory: 37kB
+         ->  GroupAggregate  (cost=1063805.31..1063805.33 rows=1 width=34) (actual time=12654.475..12660.512 rows=3991 loops=1)
+               Group Key: supplier.s_name
+               ->  Sort  (cost=1063805.31..1063805.32 rows=1 width=26) (actual time=12654.467..12656.039 rows=39281 loops=1)
+                     Sort Key: supplier.s_name
+                     Sort Method: quicksort  Memory: 1537kB
+                     ->  Nested Loop Semi Join  (cost=587927.07..1063805.30 rows=1 width=26) (actual time=6235.784..12496.563 rows=39281 loops=1)
+                           Join Filter: (l2.l_suppkey <> l1.l_suppkey)
+                           Rows Removed by Join Filter: 27756
+                           ->  Nested Loop  (cost=587926.51..1063802.65 rows=1 width=38) (actual time=6235.777..12306.820 rows=65960 loops=1)
+                                 ->  Merge Anti Join  (cost=587926.07..1063800.21 rows=1 width=34) (actual time=6235.761..11993.394 rows=134155 loops=1)
+                                       Merge Cond: (l1.l_orderkey = l3.l_orderkey)
+                                       Join Filter: (l3.l_suppkey <> l1.l_suppkey)
+                                       Rows Removed by Join Filter: 551044
+                                       ->  Sort  (cost=587925.51..589925.14 rows=799854 width=34) (actual time=6235.730..6415.211 rows=1514267 loops=1)
+                                             Sort Key: l1.l_orderkey
+                                             Sort Method: external merge  Disk: 68176kB
+                                             ->  Hash Join  (cost=2341.88..493879.81 rows=799854 width=34) (actual time=3.895..5979.996 rows=1514267 loops=1)
+                                                   Hash Cond: (l1.l_suppkey = supplier.s_suppkey)
+                                                   ->  Index Only Scan using q21_idx_2 on lineitem l1  (cost=0.56..408553.68 rows=19996341 width=8) (actual time=0.021..3401.405 rows=37929348 loops=1)
+                                                         Heap Fetches: 0
+                                                   ->  Hash  (cost=2291.31..2291.31 rows=4000 width=30) (actual time=3.861..3.862 rows=3991 loops=1)
+                                                         Buckets: 4096  Batches: 1  Memory Usage: 282kB
+                                                         ->  Nested Loop  (cost=39.29..2291.31 rows=4000 width=30) (actual time=0.481..3.366 rows=3991 loops=1)
+                                                               ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4) (actual time=0.014..0.017 rows=1 loops=1)
+                                                                     Filter: (n_name = 'PERU'::bpchar)
+                                                                     Rows Removed by Filter: 24
+                                                               ->  Bitmap Heap Scan on supplier  (cost=39.29..2250.00 rows=4000 width=34) (actual time=0.465..2.968 rows=3991 loops=1)
+                                                                     Recheck Cond: (s_nationkey = nation.n_nationkey)
+                                                                     Heap Blocks: exact=1865
+                                                                     ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..38.29 rows=4000 width=0) (actual time=0.249..0.249 rows=3991 loops=1)
+                                                                           Index Cond: (s_nationkey = nation.n_nationkey)
+                                       ->  Index Only Scan using q21_idx_2 on lineitem l3  (cost=0.56..408553.68 rows=19996341 width=8) (actual time=0.022..3392.389 rows=37966635 loops=1)
+                                             Heap Fetches: 0
+                                 ->  Index Only Scan using q21_idx_3 on orders  (cost=0.43..2.45 rows=1 width=4) (actual time=0.002..0.002 rows=0 loops=134155)
+                                       Index Cond: ((o_orderkey = l1.l_orderkey) AND (o_orderstatus = 'F'::bpchar))
+                                       Heap Fetches: 0
+                           ->  Index Only Scan using q21_idx_1 on lineitem l2  (cost=0.56..2.63 rows=4 width=8) (actual time=0.002..0.003 rows=1 loops=65960)
+                                 Index Cond: (l_orderkey = orders.o_orderkey)
+                                 Heap Fetches: 0
+ Planning Time: 3.055 ms
+ Execution Time: 12670.764 ms
+(45 rows)
+
+query 22 run 1
+SET
+SET
+SET
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=162260.52..162260.55 rows=1 width=72) (actual time=1822.077..1822.079 rows=1 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=75440.59..75440.60 rows=1 width=32) (actual time=858.677..858.677 rows=1 loops=1)
+           ->  Seq Scan on customer customer_1  (cost=0.00..75321.71 rows=47551 width=6) (actual time=0.019..826.452 rows=382426 loops=1)
+                 Filter: ((c_acctbal > 0.00) AND (SUBSTRING(c_phone FROM 1 FOR 2) = ANY ('{21,29,26,34,14,15,17}'::text[])))
+                 Rows Removed by Filter: 1117574
+   ->  GroupAggregate  (cost=86819.92..87039.62 rows=7989 width=72) (actual time=1822.076..1822.077 rows=1 loops=1)
+         Group Key: (SUBSTRING(customer.c_phone FROM 1 FOR 2))
+         ->  Sort  (cost=86819.92..86839.89 rows=7989 width=38) (actual time=1820.375..1820.722 rows=9006 loops=1)
+               Sort Key: (SUBSTRING(customer.c_phone FROM 1 FOR 2))
+               Sort Method: quicksort  Memory: 3516kB
+               ->  Nested Loop Anti Join  (cost=0.43..86302.08 rows=7989 width=38) (actual time=859.348..1801.468 rows=63509 loops=1)
+                     ->  Seq Scan on customer  (cost=0.00..75321.71 rows=17500 width=26) (actual time=859.330..1356.845 rows=191129 loops=1)
+                           Filter: ((c_acctbal > (InitPlan 1).col1) AND (SUBSTRING(c_phone FROM 1 FOR 2) = ANY ('{21,29,26,34,14,15,17}'::text[])))
+                           Rows Removed by Filter: 1308871
+                     ->  Index Only Scan using idx_orders_custkey on orders  (cost=0.43..2.65 rows=18 width=4) (actual time=0.002..0.002 rows=1 loops=191129)
+                           Index Cond: (o_custkey = customer.c_custkey)
+                           Heap Fetches: 0
+ Planning Time: 17.668 ms
+ Execution Time: 1823.251 ms
+(20 rows)
+
+SET
+SET
+SET
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=162260.52..162260.55 rows=1 width=72) (actual time=1488.543..1488.545 rows=1 loops=1)
+   InitPlan 1
+     ->  Aggregate  (cost=75440.59..75440.60 rows=1 width=32) (actual time=681.849..681.849 rows=1 loops=1)
+           ->  Seq Scan on customer customer_1  (cost=0.00..75321.71 rows=47551 width=6) (actual time=0.008..650.148 rows=382426 loops=1)
+                 Filter: ((c_acctbal > 0.00) AND (SUBSTRING(c_phone FROM 1 FOR 2) = ANY ('{21,29,26,34,14,15,17}'::text[])))
+                 Rows Removed by Filter: 1117574
+   ->  GroupAggregate  (cost=86819.92..87039.62 rows=7989 width=72) (actual time=1488.542..1488.543 rows=1 loops=1)
+         Group Key: (SUBSTRING(customer.c_phone FROM 1 FOR 2))
+         ->  Sort  (cost=86819.92..86839.89 rows=7989 width=38) (actual time=1486.845..1487.191 rows=9006 loops=1)
+               Sort Key: (SUBSTRING(customer.c_phone FROM 1 FOR 2))
+               Sort Method: quicksort  Memory: 3516kB
+               ->  Nested Loop Anti Join  (cost=0.43..86302.08 rows=7989 width=38) (actual time=681.890..1469.798 rows=63509 loops=1)
+                     ->  Seq Scan on customer  (cost=0.00..75321.71 rows=17500 width=26) (actual time=681.874..1153.297 rows=191129 loops=1)
+                           Filter: ((c_acctbal > (InitPlan 1).col1) AND (SUBSTRING(c_phone FROM 1 FOR 2) = ANY ('{21,29,26,34,14,15,17}'::text[])))
+                           Rows Removed by Filter: 1308871
+                     ->  Index Only Scan using idx_orders_custkey on orders  (cost=0.43..2.65 rows=18 width=4) (actual time=0.001..0.001 rows=1 loops=191129)
+                           Index Cond: (o_custkey = customer.c_custkey)
+                           Heap Fetches: 0
+ Planning Time: 1.285 ms
+ Execution Time: 1488.599 ms
+(20 rows)
+

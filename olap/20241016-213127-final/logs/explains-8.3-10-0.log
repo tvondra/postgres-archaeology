@@ -1,0 +1,603 @@
+query 1 run 1
+SET
+SET
+                                           QUERY PLAN                                           
+------------------------------------------------------------------------------------------------
+ Limit  (cost=3415315.22..3415315.23 rows=1 width=33)
+   ->  Sort  (cost=3415315.22..3415315.24 rows=6 width=33)
+         Sort Key: l_returnflag, l_linestatus
+         ->  HashAggregate  (cost=3415314.92..3415315.19 rows=6 width=33)
+               ->  Seq Scan on lineitem  (cost=0.00..1934953.05 rows=59214475 width=33)
+                     Filter: (l_shipdate <= '1998-09-10 00:00:00'::timestamp without time zone)
+(6 rows)
+
+query 2 run 1
+SET
+SET
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1195254.82..1195254.83 rows=1 width=194)
+   ->  Sort  (cost=1195254.82..1195254.83 rows=1 width=194)
+         Sort Key: public.supplier.s_acctbal, public.nation.n_name, public.supplier.s_name, part.p_partkey
+         ->  Merge Join  (cost=567689.37..1195254.81 rows=1 width=194)
+               Merge Cond: (part.p_partkey = public.partsupp.ps_partkey)
+               Join Filter: (public.partsupp.ps_supplycost = (subplan))
+               ->  Index Scan using q2_idx_1 on part  (cost=0.00..87135.25 rows=7511 width=30)
+                     Index Cond: (p_size = 16)
+                     Filter: ((p_type)::text ~~ '%NICKEL'::text)
+               ->  Materialize  (cost=567677.77..587459.97 rows=1582576 width=176)
+                     ->  Sort  (cost=567677.77..571634.21 rows=1582576 width=176)
+                           Sort Key: public.partsupp.ps_partkey
+                           ->  Hash Join  (cost=4073.53..308126.16 rows=1582576 width=176)
+                                 Hash Cond: (public.partsupp.ps_suppkey = public.supplier.s_suppkey)
+                                 ->  Seq Scan on partsupp  (cost=0.00..258220.63 rows=8001663 width=16)
+                                 ->  Hash  (cost=3823.53..3823.53 rows=20000 width=168)
+                                       ->  Hash Join  (cost=2.53..3823.53 rows=20000 width=168)
+                                             Hash Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                                             ->  Seq Scan on supplier  (cost=0.00..3246.00 rows=100000 width=146)
+                                             ->  Hash  (cost=2.47..2.47 rows=5 width=30)
+                                                   ->  Hash Join  (cost=1.07..2.47 rows=5 width=30)
+                                                         Hash Cond: (public.nation.n_regionkey = public.region.r_regionkey)
+                                                         ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34)
+                                                         ->  Hash  (cost=1.06..1.06 rows=1 width=4)
+                                                               ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4)
+                                                                     Filter: (r_name = 'AMERICA'::bpchar)
+               SubPlan
+                 ->  Aggregate  (cost=89.58..89.59 rows=1 width=8)
+                       ->  Nested Loop  (cost=1.56..89.57 rows=4 width=8)
+                             Join Filter: (public.nation.n_regionkey = public.region.r_regionkey)
+                             ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4)
+                                   Filter: (r_name = 'AMERICA'::bpchar)
+                             ->  Hash Join  (cost=1.56..88.27 rows=19 width=12)
+                                   Hash Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                                   ->  Nested Loop  (cost=0.00..86.45 rows=19 width=12)
+                                         ->  Index Scan using idx_partsupp_partkey on partsupp  (cost=0.00..5.02 rows=19 width=12)
+                                               Index Cond: ($0 = ps_partkey)
+                                         ->  Index Scan using supplier_pkey on supplier  (cost=0.00..4.27 rows=1 width=8)
+                                               Index Cond: (public.supplier.s_suppkey = public.partsupp.ps_suppkey)
+                                   ->  Hash  (cost=1.25..1.25 rows=25 width=8)
+                                         ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=8)
+(41 rows)
+
+query 3 run 1
+SET
+SET
+                                                   QUERY PLAN                                                    
+-----------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3675047.79..3675047.82 rows=10 width=28)
+   ->  Sort  (cost=3675047.79..3682788.26 rows=3096186 width=28)
+         Sort Key: (sum((lineitem.l_extendedprice * (1::numeric - lineitem.l_discount)))), orders.o_orderdate
+         ->  GroupAggregate  (cost=3515254.75..3608140.33 rows=3096186 width=28)
+               ->  Sort  (cost=3515254.75..3522995.21 rows=3096186 width=28)
+                     Sort Key: lineitem.l_orderkey, orders.o_orderdate, orders.o_shippriority
+                     ->  Hash Join  (cost=651753.58..3128538.99 rows=3096186 width=28)
+                           Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..1934953.05 rows=32575868 width=20)
+                                 Filter: (l_shipdate > '1995-03-07'::date)
+                           ->  Hash  (cost=626973.57..626973.57 rows=1425521 width=12)
+                                 ->  Hash Join  (cost=58811.68..626973.57 rows=1425521 width=12)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Seq Scan on orders  (cost=0.00..455754.99 rows=7138305 width=16)
+                                             Filter: (o_orderdate < '1995-03-07'::date)
+                                       ->  Hash  (cost=55067.41..55067.41 rows=299541 width=4)
+                                             ->  Seq Scan on customer  (cost=0.00..55067.41 rows=299541 width=4)
+                                                   Filter: (c_mktsegment = 'BUILDING'::bpchar)
+(18 rows)
+
+query 4 run 1
+SET
+SET
+                                                     QUERY PLAN                                                     
+--------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=375641.57..375641.58 rows=1 width=16)
+   ->  Sort  (cost=375641.57..375641.58 rows=1 width=16)
+         Sort Key: orders.o_orderpriority
+         ->  HashAggregate  (cost=375641.55..375641.56 rows=1 width=16)
+               ->  Bitmap Heap Scan on orders  (cost=8286.14..374314.87 rows=265336 width=16)
+                     Recheck Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                     Filter: (subplan)
+                     ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..8219.80 rows=530673 width=0)
+                           Index Cond: ((o_orderdate >= '1993-12-01'::date) AND (o_orderdate < '1994-03-01'::date))
+                     SubPlan
+                       ->  Index Scan using q4_idx_1 on lineitem  (cost=0.00..9.21 rows=54 width=125)
+                             Index Cond: (l_orderkey = $0)
+(12 rows)
+
+query 5 run 1
+SET
+SET
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2485916.06..2485916.06 rows=1 width=42)
+   ->  Sort  (cost=2485916.06..2485916.12 rows=25 width=42)
+         Sort Key: (sum((lineitem.l_extendedprice * (1::numeric - lineitem.l_discount))))
+         ->  HashAggregate  (cost=2485915.50..2485915.94 rows=25 width=42)
+               ->  Hash Join  (cost=422277.45..2485564.42 rows=70215 width=42)
+                     Hash Cond: ((lineitem.l_suppkey = supplier.s_suppkey) AND (customer.c_nationkey = supplier.s_nationkey))
+                     ->  Hash Join  (cost=417531.45..2445010.22 rows=1755302 width=54)
+                           Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..1785007.64 rows=59978164 width=24)
+                           ->  Hash  (cost=412044.75..412044.75 rows=438936 width=38)
+                                 ->  Hash Join  (cost=98229.19..412044.75 rows=438936 width=38)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Bitmap Heap Scan on orders  (cost=34534.51..335730.67 rows=2194677 width=8)
+                                             Recheck Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                             ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..33985.84 rows=2194677 width=0)
+                                                   Index Cond: ((o_orderdate >= '1993-01-01'::date) AND (o_orderdate < '1994-01-01'::date))
+                                       ->  Hash  (cost=59944.79..59944.79 rows=299991 width=38)
+                                             ->  Hash Join  (cost=2.53..59944.79 rows=299991 width=38)
+                                                   Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                                                   ->  Seq Scan on customer  (cost=0.00..51317.53 rows=1499953 width=8)
+                                                   ->  Hash  (cost=2.47..2.47 rows=5 width=30)
+                                                         ->  Hash Join  (cost=1.07..2.47 rows=5 width=30)
+                                                               Hash Cond: (nation.n_regionkey = region.r_regionkey)
+                                                               ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=34)
+                                                               ->  Hash  (cost=1.06..1.06 rows=1 width=4)
+                                                                     ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4)
+                                                                           Filter: (r_name = 'AMERICA'::bpchar)
+                     ->  Hash  (cost=3246.00..3246.00 rows=100000 width=8)
+                           ->  Seq Scan on supplier  (cost=0.00..3246.00 rows=100000 width=8)
+(29 rows)
+
+query 6 run 1
+SET
+SET
+                                                                                                         QUERY PLAN                                                                                                          
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1212291.12..1212291.14 rows=1 width=16)
+   ->  Aggregate  (cost=1212291.12..1212291.14 rows=1 width=16)
+         ->  Bitmap Heap Scan on lineitem  (cost=244179.75..1209305.41 rows=1194286 width=16)
+               Recheck Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < 25::numeric))
+               ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..243881.17 rows=1194286 width=0)
+                     Index Cond: ((l_shipdate >= '1993-01-01'::date) AND (l_shipdate < '1994-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.06) AND (l_discount <= 0.08) AND (l_quantity < 25::numeric))
+(6 rows)
+
+query 7 run 1
+SET
+SET
+                                                                                                      QUERY PLAN                                                                                                       
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2775066.15..2775066.15 rows=1 width=72)
+   ->  Sort  (cost=2775066.15..2775211.36 rows=58083 width=72)
+         Sort Key: n1.n_name, n2.n_name, (date_part('year'::text, (lineitem.l_shipdate)::timestamp without time zone))
+         ->  HashAggregate  (cost=2773468.87..2774775.74 rows=58083 width=72)
+               ->  Hash Join  (cost=941427.06..2772888.04 rows=58083 width=72)
+                     Hash Cond: ((lineitem.l_suppkey = supplier.s_suppkey) AND (n1.n_nationkey = supplier.s_nationkey))
+                     ->  Hash Join  (cost=936681.06..2738230.98 rows=1451992 width=80)
+                           Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                           ->  Bitmap Heap Scan on lineitem  (cost=362661.45..1820353.86 rows=18164427 width=28)
+                                 Recheck Cond: ((l_shipdate >= '1995-01-01'::date) AND (l_shipdate <= '1996-12-31'::date))
+                                 ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..358120.35 rows=18164427 width=0)
+                                       Index Cond: ((l_shipdate >= '1995-01-01'::date) AND (l_shipdate <= '1996-12-31'::date))
+                           ->  Hash  (cost=546154.28..546154.28 rows=1198906 width=60)
+                                 ->  Hash Join  (cost=59662.36..546154.28 rows=1198906 width=60)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Seq Scan on orders  (cost=0.00..418259.19 rows=14998319 width=8)
+                                       ->  Hash  (cost=58163.61..58163.61 rows=119900 width=60)
+                                             ->  Hash Join  (cost=21.30..58163.61 rows=119900 width=60)
+                                                   Hash Cond: (customer.c_nationkey = n2.n_nationkey)
+                                                   ->  Seq Scan on customer  (cost=0.00..51317.53 rows=1499953 width=8)
+                                                   ->  Hash  (cost=21.27..21.27 rows=2 width=60)
+                                                         ->  Nested Loop  (cost=1.27..21.27 rows=2 width=60)
+                                                               Join Filter: (((n1.n_name = 'PERU'::bpchar) AND (n2.n_name = 'MOROCCO'::bpchar)) OR ((n1.n_name = 'MOROCCO'::bpchar) AND (n2.n_name = 'PERU'::bpchar)))
+                                                               ->  Seq Scan on nation n1  (cost=0.00..1.25 rows=25 width=30)
+                                                               ->  Materialize  (cost=1.27..1.52 rows=25 width=30)
+                                                                     ->  Seq Scan on nation n2  (cost=0.00..1.25 rows=25 width=30)
+                     ->  Hash  (cost=3246.00..3246.00 rows=100000 width=8)
+                           ->  Seq Scan on supplier  (cost=0.00..3246.00 rows=100000 width=8)
+(28 rows)
+
+query 8 run 1
+SET
+SET
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1581345.51..1581345.51 rows=1 width=46)
+   ->  Sort  (cost=1581345.51..1581347.35 rows=736 width=46)
+         Sort Key: (date_part('year'::text, (orders.o_orderdate)::timestamp without time zone))
+         ->  HashAggregate  (cost=1581316.07..1581341.83 rows=736 width=46)
+               ->  Hash Join  (cost=518851.49..1581132.66 rows=24455 width=46)
+                     Hash Cond: (supplier.s_nationkey = n2.n_nationkey)
+                     ->  Hash Join  (cost=518849.93..1580672.56 rows=24455 width=24)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Hash Join  (cost=514353.93..1575687.46 rows=24455 width=24)
+                                 Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                 ->  Nested Loop  (cost=0.00..1051319.49 rows=399865 width=24)
+                                       ->  Index Scan using q2_idx_1 on part  (cost=0.00..66017.79 rows=13334 width=4)
+                                             Index Cond: ((p_type)::text = 'LARGE POLISHED BRASS'::text)
+                                       ->  Index Scan using idx_lineitem_part_supp on lineitem  (cost=0.00..73.47 rows=34 width=28)
+                                             Index Cond: (lineitem.l_partkey = part.p_partkey)
+                                 ->  Hash  (cost=499304.09..499304.09 rows=917267 width=8)
+                                       ->  Hash Join  (cost=135861.67..499304.09 rows=917267 width=8)
+                                             Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                             ->  Bitmap Heap Scan on orders  (cost=72166.99..409237.98 rows=4586333 width=12)
+                                                   Recheck Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                                   ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..71020.40 rows=4586333 width=0)
+                                                         Index Cond: ((o_orderdate >= '1995-01-01'::date) AND (o_orderdate <= '1996-12-31'::date))
+                                             ->  Hash  (cost=59944.79..59944.79 rows=299991 width=4)
+                                                   ->  Hash Join  (cost=2.53..59944.79 rows=299991 width=4)
+                                                         Hash Cond: (customer.c_nationkey = n1.n_nationkey)
+                                                         ->  Seq Scan on customer  (cost=0.00..51317.53 rows=1499953 width=8)
+                                                         ->  Hash  (cost=2.47..2.47 rows=5 width=4)
+                                                               ->  Hash Join  (cost=1.07..2.47 rows=5 width=4)
+                                                                     Hash Cond: (n1.n_regionkey = region.r_regionkey)
+                                                                     ->  Seq Scan on nation n1  (cost=0.00..1.25 rows=25 width=8)
+                                                                     ->  Hash  (cost=1.06..1.06 rows=1 width=4)
+                                                                           ->  Seq Scan on region  (cost=0.00..1.06 rows=1 width=4)
+                                                                                 Filter: (r_name = 'AMERICA'::bpchar)
+                           ->  Hash  (cost=3246.00..3246.00 rows=100000 width=8)
+                                 ->  Seq Scan on supplier  (cost=0.00..3246.00 rows=100000 width=8)
+                     ->  Hash  (cost=1.25..1.25 rows=25 width=30)
+                           ->  Seq Scan on nation n2  (cost=0.00..1.25 rows=25 width=30)
+(37 rows)
+
+query 9 run 1
+SET
+SET
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2862001.26..2862001.27 rows=1 width=61)
+   ->  Sort  (cost=2862001.26..2862001.54 rows=109 width=61)
+         Sort Key: nation.n_name, (date_part('year'::text, (orders.o_orderdate)::timestamp without time zone))
+         ->  HashAggregate  (cost=2861997.72..2862000.72 rows=109 width=61)
+               ->  Hash Join  (cost=77644.26..2861996.90 rows=109 width=61)
+                     Hash Cond: (supplier.s_nationkey = nation.n_nationkey)
+                     ->  Nested Loop  (cost=77642.70..2861993.30 rows=109 width=39)
+                           ->  Nested Loop  (cost=77642.70..2861441.28 rows=109 width=39)
+                                 ->  Hash Join  (cost=77642.70..451030.76 rows=319712 width=28)
+                                       Hash Cond: (partsupp.ps_suppkey = supplier.s_suppkey)
+                                       ->  Merge Join  (cost=73146.70..440104.65 rows=323299 width=20)
+                                             Merge Cond: (partsupp.ps_partkey = part.p_partkey)
+                                             ->  Index Scan using idx_partsupp_partkey on partsupp  (cost=0.00..342104.63 rows=8001663 width=16)
+                                             ->  Sort  (cost=73146.54..73348.56 rows=80810 width=4)
+                                                   Sort Key: part.p_partkey
+                                                   ->  Seq Scan on part  (cost=0.00..66559.61 rows=80810 width=4)
+                                                         Filter: ((p_name)::text ~~ '%navy%'::text)
+                                       ->  Hash  (cost=3246.00..3246.00 rows=100000 width=8)
+                                             ->  Seq Scan on supplier  (cost=0.00..3246.00 rows=100000 width=8)
+                                 ->  Index Scan using idx_lineitem_part_supp on lineitem  (cost=0.00..7.52 rows=1 width=35)
+                                       Index Cond: ((lineitem.l_partkey = partsupp.ps_partkey) AND (lineitem.l_suppkey = supplier.s_suppkey))
+                           ->  Index Scan using q21_idx_3 on orders  (cost=0.00..5.05 rows=1 width=8)
+                                 Index Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Hash  (cost=1.25..1.25 rows=25 width=30)
+                           ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=30)
+(25 rows)
+
+query 10 run 1
+SET
+SET
+                                                                           QUERY PLAN                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2727119.79..2727119.84 rows=20 width=187)
+   ->  Sort  (cost=2727119.79..2728552.77 rows=573192 width=187)
+         Sort Key: (sum((lineitem.l_extendedprice * (1::numeric - lineitem.l_discount))))
+         ->  GroupAggregate  (cost=2688939.68..2711867.36 rows=573192 width=187)
+               ->  Sort  (cost=2688939.68..2690372.66 rows=573192 width=187)
+                     Sort Key: customer.c_custkey, customer.c_name, customer.c_acctbal, customer.c_phone, nation.n_name, customer.c_address, customer.c_comment
+                     ->  Hash Join  (cost=395642.20..2596332.71 rows=573192 width=187)
+                           Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                           ->  Hash Join  (cost=395640.64..2588449.75 rows=573192 width=165)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Hash Join  (cost=293347.69..2437898.44 rows=573192 width=20)
+                                       Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                       ->  Seq Scan on lineitem  (cost=0.00..1934953.05 rows=14826602 width=20)
+                                             Filter: (l_returnflag = 'R'::bpchar)
+                                       ->  Hash  (cost=286099.81..286099.81 rows=579831 width=8)
+                                             ->  Bitmap Heap Scan on orders  (cost=9126.34..286099.81 rows=579831 width=8)
+                                                   Recheck Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                                                   ->  Bitmap Index Scan on idx_orders_orderdate  (cost=0.00..8981.38 rows=579831 width=0)
+                                                         Index Cond: ((o_orderdate >= '1994-08-01'::date) AND (o_orderdate < '1994-11-01'::date))
+                                 ->  Hash  (cost=51317.53..51317.53 rows=1499953 width=149)
+                                       ->  Seq Scan on customer  (cost=0.00..51317.53 rows=1499953 width=149)
+                           ->  Hash  (cost=1.25..1.25 rows=25 width=30)
+                                 ->  Seq Scan on nation  (cost=0.00..1.25 rows=25 width=30)
+(23 rows)
+
+query 11 run 1
+SET
+SET
+                                                             QUERY PLAN                                                             
+------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=690705.81..690705.81 rows=1 width=16)
+   InitPlan
+     ->  Aggregate  (cost=324564.26..324564.28 rows=1 width=12)
+           ->  Hash Join  (cost=2374.72..323772.97 rows=316515 width=12)
+                 Hash Cond: (public.partsupp.ps_suppkey = public.supplier.s_suppkey)
+                 ->  Seq Scan on partsupp  (cost=0.00..258220.63 rows=8001663 width=16)
+                 ->  Hash  (cost=2324.72..2324.72 rows=4000 width=4)
+                       ->  Nested Loop  (cost=55.26..2324.72 rows=4000 width=4)
+                             ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4)
+                                   Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                             ->  Bitmap Heap Scan on supplier  (cost=55.26..2273.41 rows=4000 width=8)
+                                   Recheck Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                                   ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..54.26 rows=4000 width=0)
+                                         Index Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+   ->  Sort  (cost=366141.53..366932.82 rows=316515 width=16)
+         Sort Key: (sum((public.partsupp.ps_supplycost * (public.partsupp.ps_availqty)::numeric)))
+         ->  GroupAggregate  (cost=352689.65..364558.96 rows=316515 width=16)
+               Filter: (sum((public.partsupp.ps_supplycost * (public.partsupp.ps_availqty)::numeric)) > $0)
+               ->  Sort  (cost=352689.65..353480.93 rows=316515 width=16)
+                     Sort Key: public.partsupp.ps_partkey
+                     ->  Hash Join  (cost=2374.72..323772.97 rows=316515 width=16)
+                           Hash Cond: (public.partsupp.ps_suppkey = public.supplier.s_suppkey)
+                           ->  Seq Scan on partsupp  (cost=0.00..258220.63 rows=8001663 width=20)
+                           ->  Hash  (cost=2324.72..2324.72 rows=4000 width=4)
+                                 ->  Nested Loop  (cost=55.26..2324.72 rows=4000 width=4)
+                                       ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4)
+                                             Filter: (n_name = 'SAUDI ARABIA'::bpchar)
+                                       ->  Bitmap Heap Scan on supplier  (cost=55.26..2273.41 rows=4000 width=8)
+                                             Recheck Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                                             ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..54.26 rows=4000 width=0)
+                                                   Index Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+(31 rows)
+
+query 12 run 1
+SET
+SET
+                                                                                                                       QUERY PLAN                                                                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1344859.34..1344859.34 rows=1 width=27)
+   ->  Sort  (cost=1344859.34..1344859.34 rows=1 width=27)
+         Sort Key: lineitem.l_shipmode
+         ->  HashAggregate  (cost=1344859.30..1344859.33 rows=1 width=27)
+               ->  Merge Join  (cost=725838.94..1342835.56 rows=269833 width=27)
+                     Merge Cond: (orders.o_orderkey = lineitem.l_orderkey)
+                     ->  Index Scan using orders_pkey on orders  (cost=0.00..575514.86 rows=14998319 width=20)
+                     ->  Sort  (cost=725838.71..726513.30 rows=269833 width=15)
+                           Sort Key: lineitem.l_orderkey
+                           ->  Bitmap Heap Scan on lineitem  (cost=320437.40..701497.47 rows=269833 width=15)
+                                 Recheck Cond: ((l_shipmode = ANY ('{SHIP,"REG AIR"}'::bpchar[])) AND (l_receiptdate >= '1994-01-01'::date) AND (l_receiptdate < '1995-01-01'::date) AND (l_commitdate < l_receiptdate) AND (l_shipdate < l_commitdate))
+                                 ->  Bitmap Index Scan on q12_idx_1  (cost=0.00..320369.94 rows=269833 width=0)
+                                       Index Cond: ((l_shipmode = ANY ('{SHIP,"REG AIR"}'::bpchar[])) AND (l_receiptdate >= '1994-01-01'::date) AND (l_receiptdate < '1995-01-01'::date))
+(13 rows)
+
+query 13 run 1
+SET
+SET
+                                                      QUERY PLAN                                                      
+----------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2778279.22..2778279.22 rows=1 width=8)
+   ->  Sort  (cost=2778279.22..2778279.72 rows=200 width=8)
+         Sort Key: (count(*)), (count(orders.o_orderkey))
+         ->  HashAggregate  (cost=2778275.72..2778278.22 rows=200 width=8)
+               ->  GroupAggregate  (cost=2369287.66..2755776.42 rows=1499953 width=8)
+                     ->  Merge Left Join  (cost=2369287.66..2662792.30 rows=14846942 width=8)
+                           Merge Cond: (customer.c_custkey = orders.o_custkey)
+                           ->  Index Scan using customer_pkey on customer  (cost=0.00..67050.63 rows=1499953 width=4)
+                           ->  Materialize  (cost=2369287.66..2554874.44 rows=14846942 width=8)
+                                 ->  Sort  (cost=2369287.66..2406405.02 rows=14846942 width=8)
+                                       Sort Key: orders.o_custkey
+                                       ->  Seq Scan on orders  (cost=0.00..455754.99 rows=14846942 width=8)
+                                             Filter: ((o_comment)::text !~~ '%special%requests%'::text)
+(13 rows)
+
+query 14 run 1
+SET
+SET
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=885686.47..885686.50 rows=1 width=37)
+   ->  Aggregate  (cost=885686.47..885686.50 rows=1 width=37)
+         ->  Hash Join  (cost=114335.13..882156.73 rows=705946 width=37)
+               Hash Cond: (lineitem.l_partkey = part.p_partkey)
+               ->  Bitmap Heap Scan on lineitem  (cost=14102.02..744092.85 rows=705946 width=20)
+                     Recheck Cond: ((l_shipdate >= '1994-05-01'::date) AND (l_shipdate < '1994-06-01'::date))
+                     ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..13925.54 rows=705946 width=0)
+                           Index Cond: ((l_shipdate >= '1994-05-01'::date) AND (l_shipdate < '1994-06-01'::date))
+               ->  Hash  (cost=61559.49..61559.49 rows=2000049 width=25)
+                     ->  Seq Scan on part  (cost=0.00..61559.49 rows=2000049 width=25)
+(10 rows)
+
+query 15 run 1
+SET
+SET
+CREATE VIEW
+                                                          QUERY PLAN                                                          
+------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2559418.58..2559419.77 rows=1 width=103)
+   InitPlan
+     ->  Aggregate  (cost=1276641.96..1276641.97 rows=1 width=32)
+           ->  HashAggregate  (cost=1276525.56..1276593.46 rows=3880 width=20)
+                 ->  Bitmap Heap Scan on lineitem  (cost=46918.55..1264777.04 rows=2349705 width=20)
+                       Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                       ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..46331.13 rows=2349705 width=0)
+                             Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+   ->  Merge Join  (cost=1282776.61..1287384.06 rows=3880 width=103)
+         Merge Cond: (supplier.s_suppkey = revenue0.supplier_no)
+         ->  Index Scan using supplier_pkey on supplier  (cost=0.00..4299.26 rows=100000 width=71)
+         ->  Sort  (cost=1282776.61..1282786.31 rows=3880 width=36)
+               Sort Key: revenue0.supplier_no
+               ->  Subquery Scan revenue0  (cost=1282399.82..1282545.32 rows=3880 width=36)
+                     ->  HashAggregate  (cost=1282399.82..1282506.52 rows=3880 width=20)
+                           Filter: (sum((public.lineitem.l_extendedprice * (1::numeric - public.lineitem.l_discount))) = $0)
+                           ->  Bitmap Heap Scan on lineitem  (cost=46918.55..1264777.04 rows=2349705 width=20)
+                                 Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+                                 ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..46331.13 rows=2349705 width=0)
+                                       Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1996-04-01'::date))
+(20 rows)
+
+DROP VIEW
+query 16 run 1
+SET
+SET
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=503405.84..503405.84 rows=1 width=40)
+   ->  Sort  (cost=503405.84..503470.79 rows=25983 width=40)
+         Sort Key: (count(DISTINCT partsupp.ps_suppkey)), part.p_brand, part.p_type, part.p_size
+         ->  GroupAggregate  (cost=496021.13..503275.92 rows=25983 width=40)
+               ->  Sort  (cost=496021.13..497407.13 rows=554400 width=40)
+                     Sort Key: part.p_brand, part.p_type, part.p_size
+                     ->  Hash Join  (cost=98520.61..432299.80 rows=554400 width=40)
+                           Hash Cond: (partsupp.ps_partkey = part.p_partkey)
+                           ->  Seq Scan on partsupp  (cost=3496.03..281720.81 rows=4000832 width=8)
+                                 Filter: (NOT (hashed subplan))
+                                 SubPlan
+                                   ->  Seq Scan on supplier  (cost=0.00..3496.00 rows=10 width=4)
+                                         Filter: ((s_comment)::text ~~ '%Customer%Complaints%'::text)
+                           ->  Hash  (cost=91560.23..91560.23 rows=277149 width=40)
+                                 ->  Seq Scan on part  (cost=0.00..91560.23 rows=277149 width=40)
+                                       Filter: ((p_brand <> 'Brand#12'::bpchar) AND ((p_type)::text !~~ 'SMALL BRUSHED%'::text) AND (p_size = ANY ('{12,32,36,26,40,34,49,9}'::integer[])))
+(16 rows)
+
+query 17 run 1
+SET
+SET
+                                                                         QUERY PLAN                                                                          
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=10888817.00..10888817.01 rows=1 width=10)
+   ->  Aggregate  (cost=10888817.00..10888817.01 rows=1 width=10)
+         ->  Nested Loop  (cost=10337397.23..10888765.62 rows=20552 width=10)
+               ->  Merge Join  (cost=10337397.23..10835893.01 rows=1818 width=40)
+                     Merge Cond: (public.lineitem.l_partkey = part.p_partkey)
+                     ->  GroupAggregate  (cost=10265724.36..10742086.64 rows=1768403 width=11)
+                           ->  Sort  (cost=10265724.36..10415669.77 rows=59978164 width=11)
+                                 Sort Key: public.lineitem.l_partkey
+                                 ->  Seq Scan on lineitem  (cost=0.00..1785007.64 rows=59978164 width=11)
+                     ->  Sort  (cost=71672.87..71678.01 rows=2056 width=4)
+                           Sort Key: part.p_partkey
+                           ->  Seq Scan on part  (cost=0.00..71559.74 rows=2056 width=4)
+                                 Filter: ((p_brand = 'Brand#22'::bpchar) AND (p_container = 'LG BOX'::bpchar))
+               ->  Index Scan using q17_idx_1 on lineitem  (cost=0.00..28.92 rows=11 width=21)
+                     Index Cond: ((public.lineitem.l_partkey = part.p_partkey) AND (public.lineitem.l_quantity < ((0.2 * avg(public.lineitem.l_quantity)))))
+(15 rows)
+
+query 18 run 1
+SET
+SET
+                                                                        QUERY PLAN                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=5614967.94..5614970.94 rows=100 width=48)
+   ->  GroupAggregate  (cost=5614967.94..5659682.70 rows=1490492 width=48)
+         ->  Sort  (cost=5614967.94..5618694.17 rows=1490492 width=48)
+               Sort Key: orders.o_totalprice, orders.o_orderdate, customer.c_name, customer.c_custkey, orders.o_orderkey
+               ->  Hash Join  (cost=3404554.50..5429385.18 rows=1490492 width=48)
+                     Hash Cond: (public.lineitem.l_orderkey = orders.o_orderkey)
+                     ->  Seq Scan on lineitem  (cost=0.00..1785007.64 rows=59978164 width=11)
+                     ->  Hash  (cost=3399895.54..3399895.54 rows=372717 width=45)
+                           ->  Hash Join  (cost=2806586.65..3399895.54 rows=372717 width=45)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Hash Join  (cost=2727730.71..3299700.26 rows=372717 width=26)
+                                       Hash Cond: (orders.o_orderkey = public.lineitem.l_orderkey)
+                                       ->  Seq Scan on orders  (cost=0.00..418259.19 rows=14998319 width=22)
+                                       ->  Hash  (cost=2723071.74..2723071.74 rows=372717 width=4)
+                                             ->  GroupAggregate  (cost=0.00..2719344.57 rows=372717 width=11)
+                                                   Filter: (sum(public.lineitem.l_quantity) > 313::numeric)
+                                                   ->  Index Scan using idx_lineitem_orderkey on lineitem  (cost=0.00..2413863.00 rows=59978164 width=11)
+                                 ->  Hash  (cost=51317.53..51317.53 rows=1499953 width=23)
+                                       ->  Seq Scan on customer  (cost=0.00..51317.53 rows=1499953 width=23)
+(19 rows)
+
+query 19 run 1
+SET
+SET
+                                                                                                                                                                                                                                                                                                                                                                  QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=3166649.45..3166649.46 rows=1 width=16)
+   ->  Aggregate  (cost=3166649.45..3166649.46 rows=1 width=16)
+         ->  Hash Join  (cost=115677.61..3166646.76 rows=1074 width=16)
+               Hash Cond: (lineitem.l_partkey = part.p_partkey)
+               Join Filter: (((part.p_brand = 'Brand#24'::bpchar) AND (part.p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (lineitem.l_quantity >= 10::numeric) AND (lineitem.l_quantity <= 20::numeric) AND (part.p_size <= 5)) OR ((part.p_brand = 'Brand#43'::bpchar) AND (part.p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (lineitem.l_quantity >= 10::numeric) AND (lineitem.l_quantity <= 20::numeric) AND (part.p_size <= 10)) OR ((part.p_brand = 'Brand#44'::bpchar) AND (part.p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (lineitem.l_quantity >= 20::numeric) AND (lineitem.l_quantity <= 30::numeric) AND (part.p_size <= 15)))
+               ->  Seq Scan on lineitem  (cost=0.00..2984570.92 rows=1117662 width=27)
+                     Filter: ((l_shipmode = ANY ('{AIR,"AIR REG"}'::bpchar[])) AND (l_shipinstruct = 'DELIVER IN PERSON'::bpchar) AND (((l_quantity >= 10::numeric) AND (l_quantity <= 20::numeric)) OR ((l_quantity >= 10::numeric) AND (l_quantity <= 20::numeric)) OR ((l_quantity >= 20::numeric) AND (l_quantity <= 30::numeric))))
+               ->  Hash  (cost=96560.35..96560.35 rows=988661 width=30)
+                     ->  Seq Scan on part  (cost=0.00..96560.35 rows=988661 width=30)
+                           Filter: ((p_size >= 1) AND (((p_size <= 5) AND (p_size >= 1)) OR ((p_size <= 10) AND (p_size >= 1)) OR ((p_size <= 15) AND (p_size >= 1))))
+(10 rows)
+
+query 20 run 1
+SET
+SET
+                                                                      QUERY PLAN                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2895765.92..2895765.93 rows=1 width=51)
+   ->  Sort  (cost=2895765.92..2895765.93 rows=1 width=51)
+         Sort Key: supplier.s_name
+         ->  Nested Loop  (cost=2895760.33..2895765.91 rows=1 width=51)
+               ->  Nested Loop  (cost=2895760.33..2895764.63 rows=1 width=55)
+                     ->  HashAggregate  (cost=2895760.33..2895760.34 rows=1 width=8)
+                           ->  Nested Loop  (cost=2737382.63..2895760.33 rows=1 width=8)
+                                 Join Filter: ((partsupp.ps_availqty)::numeric > ((0.5 * sum(lineitem.l_quantity))))
+                                 ->  Merge Join  (cost=2737382.63..2853809.36 rows=9209 width=44)
+                                       Merge Cond: (lineitem.l_partkey = part.p_partkey)
+                                       ->  GroupAggregate  (cost=2669125.74..2773963.90 rows=911637 width=15)
+                                             ->  Sort  (cost=2669125.74..2691916.64 rows=9116361 width=15)
+                                                   Sort Key: lineitem.l_partkey, lineitem.l_suppkey
+                                                   ->  Bitmap Heap Scan on lineitem  (cost=182016.78..1503988.19 rows=9116361 width=15)
+                                                         Recheck Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1997-01-01'::date))
+                                                         ->  Bitmap Index Scan on idx_lineitem_shipdate  (cost=0.00..179737.69 rows=9116361 width=0)
+                                                               Index Cond: ((l_shipdate >= '1996-01-01'::date) AND (l_shipdate < '1997-01-01'::date))
+                                       ->  Sort  (cost=68256.90..68307.40 rows=20203 width=4)
+                                             Sort Key: part.p_partkey
+                                             ->  HashAggregate  (cost=66610.12..66812.15 rows=20203 width=4)
+                                                   ->  Seq Scan on part  (cost=0.00..66559.61 rows=20203 width=4)
+                                                         Filter: ((p_name)::text ~~ 'olive%'::text)
+                                 ->  Index Scan using partsupp_pkey on partsupp  (cost=0.00..4.54 rows=1 width=12)
+                                       Index Cond: ((partsupp.ps_partkey = lineitem.l_partkey) AND (partsupp.ps_suppkey = lineitem.l_suppkey))
+                     ->  Index Scan using supplier_pkey on supplier  (cost=0.00..4.27 rows=1 width=59)
+                           Index Cond: (supplier.s_suppkey = lineitem.l_suppkey)
+               ->  Index Scan using nation_pkey on nation  (cost=0.00..1.27 rows=1 width=4)
+                     Index Cond: (nation.n_nationkey = supplier.s_nationkey)
+                     Filter: (nation.n_name = 'IRAQ'::bpchar)
+(29 rows)
+
+query 21 run 1
+SET
+SET
+                                                             QUERY PLAN                                                             
+------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=9421708.04..9421708.29 rows=100 width=26)
+   ->  Sort  (cost=9421708.04..9421948.24 rows=96078 width=26)
+         Sort Key: (count(*)), supplier.s_name
+         ->  HashAggregate  (cost=9416835.03..9418036.01 rows=96078 width=26)
+               ->  Hash Join  (cost=974419.01..9416354.64 rows=96078 width=26)
+                     Hash Cond: (l1.l_orderkey = orders.o_orderkey)
+                     ->  Hash Join  (cost=400411.87..8808247.55 rows=199927 width=30)
+                           Hash Cond: (l1.l_suppkey = supplier.s_suppkey)
+                           ->  Bitmap Heap Scan on lineitem l1  (cost=398037.16..8785130.38 rows=4998180 width=8)
+                                 Recheck Cond: (l_receiptdate > l_commitdate)
+                                 Filter: ((subplan) AND (NOT (subplan)))
+                                 ->  Bitmap Index Scan on q21_idx_2  (cost=0.00..396787.61 rows=19992721 width=0)
+                                 SubPlan
+                                   ->  Index Scan using idx_lineitem_orderkey on lineitem l3  (cost=0.00..14.16 rows=54 width=125)
+                                         Index Cond: (l_orderkey = $0)
+                                         Filter: ((l_suppkey <> $1) AND (l_receiptdate > l_commitdate))
+                                   ->  Index Scan using idx_lineitem_orderkey on lineitem l2  (cost=0.00..13.76 rows=161 width=125)
+                                         Index Cond: (l_orderkey = $0)
+                                         Filter: (l_suppkey <> $1)
+                           ->  Hash  (cost=2324.72..2324.72 rows=4000 width=30)
+                                 ->  Nested Loop  (cost=55.26..2324.72 rows=4000 width=30)
+                                       ->  Seq Scan on nation  (cost=0.00..1.31 rows=1 width=4)
+                                             Filter: (n_name = 'PERU'::bpchar)
+                                       ->  Bitmap Heap Scan on supplier  (cost=55.26..2273.41 rows=4000 width=34)
+                                             Recheck Cond: (supplier.s_nationkey = nation.n_nationkey)
+                                             ->  Bitmap Index Scan on idx_supplier_nation_key  (cost=0.00..54.26 rows=4000 width=0)
+                                                   Index Cond: (supplier.s_nationkey = nation.n_nationkey)
+                     ->  Hash  (cost=455754.99..455754.99 rows=7207692 width=4)
+                           ->  Seq Scan on orders  (cost=0.00..455754.99 rows=7207692 width=4)
+                                 Filter: (o_orderstatus = 'F'::bpchar)
+(30 rows)
+
+query 22 run 1
+SET
+SET
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1302081.23..1302081.23 rows=1 width=24)
+   InitPlan
+     ->  Aggregate  (cost=75809.36..75809.37 rows=1 width=8)
+           ->  Seq Scan on customer  (cost=0.00..75691.77 rows=47035 width=8)
+                 Filter: ((c_acctbal > 0.00) AND ("substring"((c_phone)::text, 1, 2) = ANY ('{21,29,26,34,14,15,17}'::text[])))
+   ->  Sort  (cost=1226271.86..1226293.41 rows=8620 width=24)
+         Sort Key: ("substring"((public.customer.c_phone)::text, 1, 2))
+         ->  HashAggregate  (cost=1226056.36..1226228.76 rows=8620 width=24)
+               ->  Bitmap Heap Scan on customer  (cost=82560.77..1225991.71 rows=8620 width=24)
+                     Recheck Cond: (c_acctbal > $0)
+                     Filter: (("substring"((c_phone)::text, 1, 2) = ANY ('{21,29,26,34,14,15,17}'::text[])) AND (NOT (subplan)))
+                     ->  Bitmap Index Scan on q10_idx_1  (cost=0.00..82558.61 rows=499984 width=0)
+                           Index Cond: (c_acctbal > $0)
+                     SubPlan
+                       ->  Index Scan using idx_orders_custkey on orders  (cost=0.00..39.38 rows=18 width=109)
+                             Index Cond: (o_custkey = $1)
+(16 rows)
+
